@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { User, Phone, Mail, CreditCard, FileText, Package, Activity, X } from "lucide-react";
 import type { Patient } from "@/pages/AdminDashboard";
 
 interface PatientDialogProps {
@@ -56,50 +57,81 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{patient ? "Editar Paciente" : "Nuevo Paciente"}</DialogTitle>
-          <DialogDescription>
-            {patient ? "Actualiza la información del paciente" : "Ingresa los datos del nuevo paciente"}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        {/* Header with close button */}
+        <div className="bg-primary/5 p-6 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">Nuevo Paciente</DialogTitle>
+                <p className="text-sm text-muted-foreground">Ingresa la información del nuevo paciente</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="rounded-full"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="nombre">Nombre Completo *</Label>
+              <Label htmlFor="nombre" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Nombre Completo
+              </Label>
               <Input
                 id="nombre"
                 value={formData.nombre}
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                placeholder="Juan Pérez García"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="telefono">Teléfono *</Label>
+              <Label htmlFor="telefono" className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                Número de Teléfono
+              </Label>
               <Input
                 id="telefono"
                 type="tel"
                 value={formData.telefono}
                 onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                placeholder="+52 123 456 7890"
                 required
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="correo">Correo Electrónico *</Label>
-            <Input
-              id="correo"
-              type="email"
-              value={formData.correo}
-              onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="tipoPago">Tipo de Pago *</Label>
+              <Label htmlFor="correo" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Correo Electrónico
+              </Label>
+              <Input
+                id="correo"
+                type="email"
+                value={formData.correo}
+                onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
+                placeholder="paciente@ejemplo.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tipoPago" className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Tipo de Pago
+              </Label>
               <Select
                 value={formData.tipoPago}
                 onValueChange={(value) => setFormData({ ...formData, tipoPago: value })}
@@ -114,58 +146,69 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="fechaRegistro">Fecha de Registro *</Label>
-              <Input
-                id="fechaRegistro"
-                type="date"
-                value={formData.fechaRegistro}
-                onChange={(e) => setFormData({ ...formData, fechaRegistro: e.target.value })}
-                required
-              />
-            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="producto">Producto</Label>
-            <Input
-              id="producto"
-              value={formData.producto}
-              onChange={(e) => setFormData({ ...formData, producto: e.target.value })}
-              placeholder="Ej: Terapia Cuántica, Suplementos, etc."
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="observaciones">Observaciones</Label>
+            <Label htmlFor="observaciones" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Observaciones
+            </Label>
             <Textarea
               id="observaciones"
               value={formData.observaciones}
               onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-              placeholder="Notas adicionales sobre el paciente..."
-              rows={4}
+              placeholder="Notas adicionales sobre el paciente, historial, síntomas, etc..."
+              rows={3}
             />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="escaneoQuantico"
-              checked={formData.escaneoQuantico}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, escaneoQuantico: checked as boolean })
-              }
-            />
-            <Label htmlFor="escaneoQuantico" className="cursor-pointer">
-              Escaneo Cuántico - Terapia
-            </Label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="border rounded-lg p-4 space-y-2">
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="producto"
+                  checked={!!formData.producto}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, producto: checked ? "Producto" : "" })
+                  }
+                />
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  <Label htmlFor="producto" className="cursor-pointer font-semibold">
+                    Compró Producto
+                  </Label>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground ml-9">El paciente adquirió algún producto</p>
+            </div>
+
+            <div className="border rounded-lg p-4 space-y-2">
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="escaneoQuantico"
+                  checked={formData.escaneoQuantico}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, escaneoQuantico: checked as boolean })
+                  }
+                />
+                <div className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  <Label htmlFor="escaneoQuantico" className="cursor-pointer font-semibold">
+                    Escaneo Cuántico - Terapia
+                  </Label>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground ml-9">Servicio de escaneo cuántico</p>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} size="lg">
               Cancelar
             </Button>
-            <Button type="submit">
-              {patient ? "Actualizar" : "Guardar"}
+            <Button type="submit" size="lg" className="bg-primary hover:bg-primary/90">
+              <FileText className="mr-2 h-4 w-4" />
+              Registrar Paciente
             </Button>
           </div>
         </form>
