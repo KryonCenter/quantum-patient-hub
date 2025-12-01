@@ -182,7 +182,7 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
                   <SelectValue placeholder="Selecciona un producto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin producto</SelectItem>
+                  <SelectItem value="none">Sin producto</SelectItem>
                   {products.map((product) => (
                     <SelectItem key={product.id} value={product.nombre}>
                       {product.nombre} - ${product.precio}
