@@ -21,6 +21,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
   const adminItems = [
     { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
     { title: "Pacientes", url: "/admin/pacientes", icon: Users },
+    { title: "Productos", url: "/admin/productos", icon: Activity },
     { title: "Estadísticas", url: "/admin/estadisticas", icon: BarChart3 },
     { title: "Usuarios", url: "/admin/usuarios", icon: UsersRound },
     { title: "Configuración", url: "/admin/configuracion", icon: Settings },
@@ -28,7 +29,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
 
   const userItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Pacientes", url: "/dashboard/pacientes", icon: Users },
+    { title: "Mis Pacientes", url: "/dashboard/pacientes", icon: Users },
   ];
 
   const items = userRole === "admin" ? adminItems : userItems;

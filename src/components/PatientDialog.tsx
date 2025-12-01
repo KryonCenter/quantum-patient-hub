@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { User, Phone, Mail, CreditCard, FileText, Package, Activity, X } from "lucide-react";
 import type { Patient } from "@/pages/AdminDashboard";
+import type { Product } from "@/pages/AdminProductos";
 
 interface PatientDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface PatientDialogProps {
 }
 
 export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDialogProps) => {
+  const [products, setProducts] = useState<Product[]>([]);
   const [formData, setFormData] = useState({
     nombre: "",
     telefono: "",
@@ -27,6 +29,13 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
     fechaRegistro: new Date().toISOString().split('T')[0],
     escaneoQuantico: false,
   });
+
+  useEffect(() => {
+    const savedProducts = localStorage.getItem("products");
+    if (savedProducts) {
+      setProducts(JSON.parse(savedProducts));
+    }
+  }, [open]);
 
   useEffect(() => {
     if (patient) {
@@ -163,23 +172,24 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="border rounded-lg p-4 space-y-2">
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="producto"
-                  checked={!!formData.producto}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, producto: checked ? "Producto" : "" })
-                  }
-                />
-                <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" />
-                  <Label htmlFor="producto" className="cursor-pointer font-semibold">
-                    Compró Producto
-                  </Label>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground ml-9">El paciente adquirió algún producto</p>
+            <div className="space-y-2">
+              <Label htmlFor="producto" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Producto
+              </Label>
+              <Select value={formData.producto} onValueChange={(value) => setFormData({ ...formData, producto: value })}>
+                <SelectTrigger id="producto">
+                  <SelectValue placeholder="Selecciona un producto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin producto</SelectItem>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.nombre}>
+                      {product.nombre} - ${product.precio}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="border rounded-lg p-4 space-y-2">
