@@ -21,12 +21,28 @@ export interface Patient {
   citas?: Appointment[];
 }
 
+export interface AppointmentProduct {
+  id: string;
+  nombre: string;
+  precio: number;
+  cantidad: number;
+}
+
+export interface ConsultationInfo {
+  sintomas: string;
+  diagnostico: string;
+  tratamiento: string;
+  observaciones: string;
+}
+
 export interface Appointment {
   id: string;
   fecha: string;
   hora: string;
   motivo: string;
   estado: "pendiente" | "completada" | "cancelada";
+  productos: AppointmentProduct[];
+  consulta: ConsultationInfo;
 }
 
 const mockPatients: Patient[] = [
