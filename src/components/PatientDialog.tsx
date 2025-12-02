@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User, Phone, Mail, CreditCard, FileText, Package, Activity, X } from "lucide-react";
+import { User, Phone, Mail, CreditCard, FileText, Activity, X } from "lucide-react";
 import { AppointmentSection } from "@/components/AppointmentSection";
 import type { Patient, Appointment } from "@/pages/AdminDashboard";
 import type { Product } from "@/pages/AdminProductos";
@@ -19,7 +19,6 @@ interface PatientDialogProps {
 }
 
 export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDialogProps) => {
-  const [products, setProducts] = useState<Product[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [formData, setFormData] = useState({
     nombre: "",
@@ -27,17 +26,9 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
     correo: "",
     tipoPago: "",
     observaciones: "",
-    producto: "",
     fechaRegistro: new Date().toISOString().split('T')[0],
     escaneoQuantico: false,
   });
-
-  useEffect(() => {
-    const savedProducts = localStorage.getItem("products");
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-    }
-  }, [open]);
 
   useEffect(() => {
     if (patient) {
@@ -50,7 +41,6 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
         correo: "",
         tipoPago: "",
         observaciones: "",
-        producto: "",
         fechaRegistro: new Date().toISOString().split('T')[0],
         escaneoQuantico: false,
       });
@@ -177,45 +167,23 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="producto" className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                Producto
-              </Label>
-              <Select value={formData.producto} onValueChange={(value) => setFormData({ ...formData, producto: value })}>
-                <SelectTrigger id="producto">
-                  <SelectValue placeholder="Selecciona un producto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin producto</SelectItem>
-                  {products.map((product) => (
-                    <SelectItem key={product.id} value={product.nombre}>
-                      {product.nombre} - ${product.precio}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="border rounded-lg p-4 space-y-2">
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="escaneoQuantico"
-                  checked={formData.escaneoQuantico}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, escaneoQuantico: checked as boolean })
-                  }
-                />
-                <div className="flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  <Label htmlFor="escaneoQuantico" className="cursor-pointer font-semibold">
-                    Escaneo Cuántico - Terapia
-                  </Label>
-                </div>
+          <div className="border rounded-lg p-4 space-y-2">
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="escaneoQuantico"
+                checked={formData.escaneoQuantico}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, escaneoQuantico: checked as boolean })
+                }
+              />
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                <Label htmlFor="escaneoQuantico" className="cursor-pointer font-semibold">
+                  Escaneo Cuántico - Terapia
+                </Label>
               </div>
-              <p className="text-xs text-muted-foreground ml-9">Servicio de escaneo cuántico</p>
             </div>
+            <p className="text-xs text-muted-foreground ml-9">Servicio de escaneo cuántico</p>
           </div>
 
           {/* Sección de seguimiento de citas */}

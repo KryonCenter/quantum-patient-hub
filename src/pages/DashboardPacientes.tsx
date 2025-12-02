@@ -135,11 +135,6 @@ const DashboardPacientes = () => {
                             Escaneo Cuántico
                           </span>
                         )}
-                        {patient.producto && (
-                          <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm">
-                            Producto
-                          </span>
-                        )}
                       </div>
                       <Button
                         variant="ghost"
