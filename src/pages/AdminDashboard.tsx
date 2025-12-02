@@ -15,7 +15,6 @@ export interface Patient {
   correo: string;
   tipoPago: string;
   observaciones: string;
-  producto: string;
   fechaRegistro: string;
   escaneoQuantico: boolean;
   citas?: Appointment[];
@@ -53,7 +52,6 @@ const mockPatients: Patient[] = [
     correo: "maria.garcia@example.com",
     tipoPago: "Tarjeta",
     observaciones: "Primera consulta, interesada en tratamiento integral",
-    producto: "Terapia Cuántica Básica",
     fechaRegistro: "2025-11-20",
     escaneoQuantico: true,
   },
@@ -64,7 +62,6 @@ const mockPatients: Patient[] = [
     correo: "juan.perez@example.com",
     tipoPago: "Efectivo",
     observaciones: "Seguimiento mensual",
-    producto: "Suplementos Vitamínicos",
     fechaRegistro: "2025-11-18",
     escaneoQuantico: false,
   },
@@ -75,7 +72,6 @@ const mockPatients: Patient[] = [
     correo: "ana.rodriguez@example.com",
     tipoPago: "Transferencia",
     observaciones: "Paciente recurrente, excelente respuesta al tratamiento",
-    producto: "Terapia Cuántica Premium",
     fechaRegistro: "2025-11-15",
     escaneoQuantico: true,
   },
@@ -192,7 +188,6 @@ const AdminDashboard = () => {
                   <TableHead>Teléfono</TableHead>
                   <TableHead>Correo</TableHead>
                   <TableHead>Tipo Pago</TableHead>
-                  <TableHead>Producto</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Escaneo</TableHead>
                   <TableHead>Acciones</TableHead>
@@ -207,7 +202,6 @@ const AdminDashboard = () => {
                     <TableCell>
                       <Badge variant="outline">{patient.tipoPago}</Badge>
                     </TableCell>
-                    <TableCell>{patient.producto}</TableCell>
                     <TableCell>{new Date(patient.fechaRegistro).toLocaleDateString()}</TableCell>
                     <TableCell>
                       {patient.escaneoQuantico ? (

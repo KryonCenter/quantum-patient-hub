@@ -41,8 +41,6 @@ const AdminPacientes = () => {
     let matchesFilter = true;
     if (filterType === "cuantico") {
       matchesFilter = patient.escaneoQuantico;
-    } else if (filterType === "productos") {
-      matchesFilter = !!patient.producto;
     }
 
     return matchesSearch && matchesFilter;
@@ -110,19 +108,13 @@ const AdminPacientes = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-4">
           <StatCard title="Total" value={patients.length} icon={Users} colorClass="bg-primary/10" />
           <StatCard
             title="Cuántico"
             value={patients.filter(p => p.escaneoQuantico).length}
             icon={Activity}
             colorClass="bg-emerald-100"
-          />
-          <StatCard
-            title="Productos"
-            value={patients.filter(p => p.producto).length}
-            icon={Package}
-            colorClass="bg-blue-100"
           />
           <StatCard title="Hoy" value="0" icon={Calendar} colorClass="bg-amber-100" />
           <StatCard title="Este Mes" value={patients.length} icon={Calendar} colorClass="bg-primary/10" />
@@ -148,7 +140,6 @@ const AdminPacientes = () => {
                 <SelectContent>
                   <SelectItem value="todos">Todos los pacientes</SelectItem>
                   <SelectItem value="cuantico">Con escaneo cuántico</SelectItem>
-                  <SelectItem value="productos">Con productos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -198,11 +189,6 @@ const AdminPacientes = () => {
                         {patient.escaneoQuantico && (
                           <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm">
                             Escaneo Cuántico
-                          </span>
-                        )}
-                        {patient.producto && (
-                          <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm">
-                            Producto
                           </span>
                         )}
                       </div>
