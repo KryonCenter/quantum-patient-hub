@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { User, Phone, Mail, CreditCard, FileText, Package, Activity, X } from "lucide-react";
-import { AppointmentSection, type Appointment } from "@/components/AppointmentSection";
-import type { Patient } from "@/pages/AdminDashboard";
+import { AppointmentSection } from "@/components/AppointmentSection";
+import type { Patient, Appointment } from "@/pages/AdminDashboard";
 import type { Product } from "@/pages/AdminProductos";
 
 interface PatientDialogProps {
