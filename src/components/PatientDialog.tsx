@@ -75,8 +75,10 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-xl">Nuevo Paciente</DialogTitle>
-                <p className="text-sm text-muted-foreground">Ingresa la información del nuevo paciente</p>
+                <DialogTitle className="text-xl">{patient ? "Editar Paciente" : "Nuevo Paciente"}</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  {patient ? "Actualiza la información del paciente" : "Ingresa la información del nuevo paciente"}
+                </p>
               </div>
             </div>
             <Button
@@ -218,7 +220,7 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
             </Button>
             <Button type="submit" size="lg" className="bg-primary hover:bg-primary/90">
               <FileText className="mr-2 h-4 w-4" />
-              Registrar Paciente
+              {patient ? "Actualizar Paciente" : "Registrar Paciente"}
             </Button>
           </div>
         </form>

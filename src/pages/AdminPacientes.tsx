@@ -1,10 +1,21 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
-import { Users, Activity, Package, Calendar, Search } from "lucide-react";
+import { Users, Activity, Package, Calendar, Search, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PatientDialog } from "@/components/PatientDialog";
 import type { Patient } from "@/pages/AdminDashboard";
 import { useToast } from "@/hooks/use-toast";
@@ -12,18 +23,56 @@ import { useToast } from "@/hooks/use-toast";
 const AdminPacientes = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [deletingPatientId, setDeletingPatientId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const handleAddPatient = (patient: Omit<Patient, "id">) => {
-    const newPatient = {
-      ...patient,
-      id: Date.now().toString(),
-    };
-    setPatients([...patients, newPatient]);
-    toast({
-      title: "Paciente agregado",
-      description: "El paciente ha sido registrado exitosamente",
-    });
+  const handleSavePatient = (patientData: Omit<Patient, "id">) => {
+    if (editingPatient) {
+      setPatients(patients.map(p => 
+        p.id === editingPatient.id 
+          ? { ...patientData, id: editingPatient.id }
+          : p
+      ));
+      toast({
+        title: "Paciente actualizado",
+        description: "Los datos del paciente han sido actualizados exitosamente",
+      });
+      setEditingPatient(null);
+    } else {
+      const newPatient = {
+        ...patientData,
+        id: Date.now().toString(),
+      };
+      setPatients([...patients, newPatient]);
+      toast({
+        title: "Paciente agregado",
+        description: "El paciente ha sido registrado exitosamente",
+      });
+    }
+  };
+
+  const handleEditPatient = (patient: Patient) => {
+    setEditingPatient(patient);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeletePatient = () => {
+    if (deletingPatientId) {
+      setPatients(patients.filter(p => p.id !== deletingPatientId));
+      toast({
+        title: "Paciente eliminado",
+        description: "El paciente ha sido eliminado exitosamente",
+      });
+      setDeletingPatientId(null);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingPatient(null);
+    }
   };
 
   return (
@@ -106,17 +155,33 @@ const AdminPacientes = () => {
                         <p className="text-sm text-muted-foreground">{patient.correo}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      {patient.escaneoQuantico && (
-                        <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm">
-                          Escaneo Cuántico
-                        </span>
-                      )}
-                      {patient.producto && (
-                        <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm">
-                          Producto
-                        </span>
-                      )}
+                     <div className="flex items-center gap-2">
+                      <div className="flex gap-2 mr-4">
+                        {patient.escaneoQuantico && (
+                          <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-sm">
+                            Escaneo Cuántico
+                          </span>
+                        )}
+                        {patient.producto && (
+                          <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm">
+                            Producto
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditPatient(patient)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeletingPatientId(patient.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -128,9 +193,27 @@ const AdminPacientes = () => {
 
       <PatientDialog
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onSave={handleAddPatient}
+        onOpenChange={handleDialogClose}
+        onSave={handleSavePatient}
+        patient={editingPatient}
       />
+
+      <AlertDialog open={!!deletingPatientId} onOpenChange={(open) => !open && setDeletingPatientId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente el registro del paciente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePatient} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
