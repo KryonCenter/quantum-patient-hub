@@ -18,6 +18,15 @@ export interface Patient {
   producto: string;
   fechaRegistro: string;
   escaneoQuantico: boolean;
+  citas?: Appointment[];
+}
+
+export interface Appointment {
+  id: string;
+  fecha: string;
+  hora: string;
+  motivo: string;
+  estado: "pendiente" | "completada" | "cancelada";
 }
 
 const mockPatients: Patient[] = [
