@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
-import { Users, Activity, Package, Calendar, Search, Pencil, Trash2 } from "lucide-react";
+import { Users, Activity, Package, Calendar, Search, Pencil, Trash2, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PatientDialog } from "@/components/PatientDialog";
-import type { Patient } from "@/pages/AdminDashboard";
+import type { Patient, Appointment } from "@/pages/AdminDashboard";
 import { useToast } from "@/hooks/use-toast";
 
 const AdminPacientes = () => {
@@ -25,7 +25,28 @@ const AdminPacientes = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [deletingPatientId, setDeletingPatientId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState("todos");
   const { toast } = useToast();
+
+  // Filtrar pacientes basado en búsqueda y filtros
+  const filteredPatients = patients.filter((patient) => {
+    // Filtro de búsqueda
+    const matchesSearch = searchQuery === "" || 
+      patient.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      patient.correo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      patient.telefono.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Filtro de tipo
+    let matchesFilter = true;
+    if (filterType === "cuantico") {
+      matchesFilter = patient.escaneoQuantico;
+    } else if (filterType === "productos") {
+      matchesFilter = !!patient.producto;
+    }
+
+    return matchesSearch && matchesFilter;
+  });
 
   const handleSavePatient = (patientData: Omit<Patient, "id">) => {
     if (editingPatient) {
@@ -113,9 +134,14 @@ const AdminPacientes = () => {
             <div className="flex gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar por nombre, correo o teléfono..." className="pl-10" />
+                <Input 
+                  placeholder="Buscar por nombre, correo o teléfono..." 
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
-              <Select defaultValue="todos">
+              <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Filtrar" />
                 </SelectTrigger>
@@ -130,30 +156,42 @@ const AdminPacientes = () => {
         </Card>
 
         {/* Patient List or Empty State */}
-        {patients.length === 0 ? (
+        {filteredPatients.length === 0 ? (
           <Card>
             <CardContent className="p-12">
               <div className="flex flex-col items-center justify-center text-center">
                 <Users className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No hay pacientes registrados</h3>
-                <p className="text-muted-foreground mb-6">Comienza agregando tu primer paciente</p>
+                <h3 className="text-lg font-semibold mb-2">
+                  {patients.length === 0 ? "No hay pacientes registrados" : "No se encontraron pacientes"}
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  {patients.length === 0 ? "Comienza agregando tu primer paciente" : "Intenta con otros términos de búsqueda"}
+                </p>
               </div>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            {patients.map((patient) => (
+            {filteredPatients.map((patient) => (
               <Card key={patient.id}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                         <Users className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">{patient.nombre}</h3>
-                        <p className="text-sm text-muted-foreground">{patient.correo}</p>
-                      </div>
+                       </div>
+                       <div>
+                         <h3 className="font-semibold">{patient.nombre}</h3>
+                         <p className="text-sm text-muted-foreground">{patient.correo}</p>
+                         {patient.citas && patient.citas.length > 0 && (
+                           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                             <Clock className="h-3 w-3" />
+                             <span>
+                               {patient.citas.filter(c => c.estado === "pendiente").length} cita(s) pendiente(s)
+                             </span>
+                           </div>
+                         )}
+                       </div>
                     </div>
                      <div className="flex items-center gap-2">
                       <div className="flex gap-2 mr-4">

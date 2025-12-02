@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { User, Phone, Mail, CreditCard, FileText, Package, Activity, X } from "lucide-react";
+import { AppointmentSection, type Appointment } from "@/components/AppointmentSection";
 import type { Patient } from "@/pages/AdminDashboard";
 import type { Product } from "@/pages/AdminProductos";
 
@@ -19,6 +20,7 @@ interface PatientDialogProps {
 
 export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDialogProps) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [formData, setFormData] = useState({
     nombre: "",
     telefono: "",
@@ -40,6 +42,7 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
   useEffect(() => {
     if (patient) {
       setFormData(patient);
+      setAppointments(patient.citas || []);
     } else {
       setFormData({
         nombre: "",
@@ -51,15 +54,16 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
         fechaRegistro: new Date().toISOString().split('T')[0],
         escaneoQuantico: false,
       });
+      setAppointments([]);
     }
   }, [patient, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (patient) {
-      onSave({ ...formData, id: patient.id });
+      onSave({ ...formData, id: patient.id, citas: appointments });
     } else {
-      onSave(formData);
+      onSave({ ...formData, citas: appointments });
     }
     onOpenChange(false);
   };
@@ -212,6 +216,14 @@ export const PatientDialog = ({ open, onOpenChange, onSave, patient }: PatientDi
               </div>
               <p className="text-xs text-muted-foreground ml-9">Servicio de escaneo cuántico</p>
             </div>
+          </div>
+
+          {/* Sección de seguimiento de citas */}
+          <div className="border-t pt-6">
+            <AppointmentSection
+              appointments={appointments}
+              onAppointmentsChange={setAppointments}
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
