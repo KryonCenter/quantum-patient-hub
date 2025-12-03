@@ -31,6 +31,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
   const userItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Mis Pacientes", url: "/dashboard/pacientes", icon: Users },
+    { title: "Citas", url: "/dashboard/citas", icon: CalendarDays },
   ];
 
   const items = userRole === "admin" ? adminItems : userItems;
