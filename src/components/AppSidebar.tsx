@@ -1,4 +1,4 @@
-import { Activity, LayoutDashboard, Users, BarChart3, UsersRound, Settings, Shield, LogOut } from "lucide-react";
+import { Activity, LayoutDashboard, Users, BarChart3, UsersRound, Settings, Shield, LogOut, CalendarDays } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
@@ -21,6 +21,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
   const adminItems = [
     { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
     { title: "Pacientes", url: "/admin/pacientes", icon: Users },
+    { title: "Citas", url: "/admin/citas", icon: CalendarDays },
     { title: "Productos", url: "/admin/productos", icon: Activity },
     { title: "Estadísticas", url: "/admin/estadisticas", icon: BarChart3 },
     { title: "Usuarios", url: "/admin/usuarios", icon: UsersRound },
