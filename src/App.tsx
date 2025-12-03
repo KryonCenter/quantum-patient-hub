@@ -10,10 +10,10 @@ import AdminPacientes from "./pages/AdminPacientes";
 import AdminProductos from "./pages/AdminProductos";
 import AdminEstadisticas from "./pages/AdminEstadisticas";
 import AdminUsuarios from "./pages/AdminUsuarios";
+import AdminCitas from "./pages/AdminCitas";
 import UserDashboardNew from "./pages/UserDashboardNew";
 import DashboardPacientes from "./pages/DashboardPacientes";
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -27,6 +27,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<AdminDashboardNew />} />
           <Route path="/admin/pacientes" element={<AdminPacientes />} />
+          <Route path="/admin/citas" element={<AdminCitas />} />
           <Route path="/admin/productos" element={<AdminProductos />} />
           <Route path="/admin/estadisticas" element={<AdminEstadisticas />} />
           <Route path="/admin/usuarios" element={<AdminUsuarios />} />
