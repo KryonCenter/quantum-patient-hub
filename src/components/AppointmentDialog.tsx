@@ -68,35 +68,40 @@ export const AppointmentDialog = ({ open, onOpenChange, onSave, appointment }: A
 
   const handleAddProduct = (productId: string) => {
     const product = products.find(p => p.id === productId);
-    if (product) {
-      const existingProduct = selectedProducts.find(p => p.id === productId);
-      if (existingProduct) {
-        setSelectedProducts(
-          selectedProducts.map(p =>
-            p.id === productId ? { ...p, cantidad: p.cantidad + 1 } : p
-          )
-        );
-      } else {
-        setSelectedProducts([
-          ...selectedProducts,
-          { id: product.id, nombre: product.nombre, precio: product.precio, cantidad: 1 },
-        ]);
-      }
+    if (!product) return;
+    const existing = selectedProducts.find(p => p.productId === productId);
+    if (existing) {
+      setSelectedProducts(
+        selectedProducts.map(p =>
+          p.productId === productId ? { ...p, cantidad: p.cantidad + 1 } : p
+        )
+      );
+    } else {
+      setSelectedProducts([
+        ...selectedProducts,
+        {
+          id: `tmp-${productId}-${Date.now()}`,
+          productId: product.id,
+          nombre: product.nombre,
+          precio: product.precio,
+          cantidad: 1,
+        },
+      ]);
     }
   };
 
-  const handleUpdateQuantity = (productId: string, cantidad: number) => {
+  const handleUpdateQuantity = (lineId: string, cantidad: number) => {
     if (cantidad <= 0) {
-      setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
+      setSelectedProducts(selectedProducts.filter(p => p.id !== lineId));
     } else {
       setSelectedProducts(
-        selectedProducts.map(p => (p.id === productId ? { ...p, cantidad } : p))
+        selectedProducts.map(p => (p.id === lineId ? { ...p, cantidad } : p))
       );
     }
   };
 
-  const handleRemoveProduct = (productId: string) => {
-    setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
+  const handleRemoveProduct = (lineId: string) => {
+    setSelectedProducts(selectedProducts.filter(p => p.id !== lineId));
   };
 
   const getTotalAmount = () => {
