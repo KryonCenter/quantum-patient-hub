@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, FileText, Package, Plus, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Appointment, AppointmentProduct } from "@/pages/AdminDashboard";
-import type { Product } from "@/pages/AdminProductos";
+import type { Appointment, AppointmentProduct, Product } from "@/lib/types";
+import { fetchProducts } from "@/lib/api";
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -34,9 +34,8 @@ export const AppointmentDialog = ({ open, onOpenChange, onSave, appointment }: A
   });
 
   useEffect(() => {
-    const savedProducts = localStorage.getItem("products");
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
+    if (open) {
+      fetchProducts().then(setProducts).catch(() => setProducts([]));
     }
   }, [open]);
 
