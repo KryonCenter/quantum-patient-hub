@@ -1,27 +1,45 @@
 import { supabase } from "@/integrations/supabase/client";
 import type {
   Appointment,
-  AppointmentProduct,
+  Branch,
+  Doctor,
   Patient,
   Product,
+  ProductKind,
 } from "@/lib/types";
 
 /* ---------- helpers ---------- */
 
-const emptyConsulta = () => ({
-  sintomas: "",
-  diagnostico: "",
-  tratamiento: "",
-  observaciones: "",
-});
+let cachedDoctorId: string | null = null;
 
-function rowToAppointment(row: any, products: any[] = []): Appointment {
+export async function getCurrentDoctorId(): Promise<string | null> {
+  if (cachedDoctorId) return cachedDoctorId;
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return null;
+  const { data, error } = await supabase
+    .from("doctors")
+    .select("id")
+    .eq("user_id", u.user.id)
+    .maybeSingle();
+  if (error) return null;
+  cachedDoctorId = data?.id ?? null;
+  return cachedDoctorId;
+}
+
+export function clearDoctorCache() {
+  cachedDoctorId = null;
+}
+
+function rowToAppointment(row: any, products: any[] = [], branch?: any): Appointment {
   return {
     id: row.id,
     fecha: row.fecha,
     hora: row.hora ? String(row.hora).slice(0, 5) : "",
     motivo: row.motivo ?? "",
     estado: row.estado,
+    branchId: row.branch_id ?? null,
+    branchName: branch?.name ?? null,
+    branchAddress: branch?.address ?? null,
     productos: products.map((p) => ({
       id: p.id,
       productId: p.product_id,
@@ -47,9 +65,150 @@ function rowToPatient(row: any, appointments: Appointment[] = []): Patient {
     tipoPago: row.tipo_pago ?? "",
     observaciones: row.observaciones ?? "",
     fechaRegistro: row.fecha_registro,
-    escaneoQuantico: row.escaneo_quantico,
     citas: appointments,
   };
+}
+
+/* ---------- doctor ---------- */
+
+export async function fetchCurrentDoctor(): Promise<Doctor | null> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return null;
+  const { data, error } = await supabase
+    .from("doctors")
+    .select("*")
+    .eq("user_id", u.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    id: data.id,
+    userId: data.user_id,
+    displayName: data.display_name,
+    specialty: data.specialty,
+    logoUrl: data.logo_url,
+    brandColor: data.brand_color ?? "#10b981",
+    whatsappPhone: data.whatsapp_phone,
+    googleCalendarConnected: data.google_calendar_connected,
+  };
+}
+
+export async function upsertDoctor(input: {
+  displayName: string;
+  specialty?: string;
+  logoUrl?: string | null;
+  brandColor?: string;
+  whatsappPhone?: string;
+}): Promise<Doctor> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) throw new Error("No autenticado");
+
+  const existing = await fetchCurrentDoctor();
+  if (existing) {
+    const { data, error } = await supabase
+      .from("doctors")
+      .update({
+        display_name: input.displayName,
+        specialty: input.specialty ?? null,
+        logo_url: input.logoUrl ?? null,
+        brand_color: input.brandColor ?? "#10b981",
+        whatsapp_phone: input.whatsappPhone ?? null,
+      })
+      .eq("id", existing.id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    clearDoctorCache();
+    return (await fetchCurrentDoctor())!;
+  }
+  const { data, error } = await supabase
+    .from("doctors")
+    .insert({
+      user_id: u.user.id,
+      display_name: input.displayName,
+      specialty: input.specialty ?? null,
+      logo_url: input.logoUrl ?? null,
+      brand_color: input.brandColor ?? "#10b981",
+      whatsapp_phone: input.whatsappPhone ?? null,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  // also ensure role
+  await supabase.from("user_roles").insert({ user_id: u.user.id, role: "doctor" as any });
+  clearDoctorCache();
+  return (await fetchCurrentDoctor())!;
+}
+
+export async function uploadDoctorLogo(file: File): Promise<string> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) throw new Error("No autenticado");
+  const ext = file.name.split(".").pop() || "png";
+  const path = `${u.user.id}/logo-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from("doctor-logos")
+    .upload(path, file, { upsert: true });
+  if (error) throw error;
+  const { data } = await supabase.storage.from("doctor-logos").createSignedUrl(path, 60 * 60 * 24 * 365);
+  return data?.signedUrl ?? path;
+}
+
+/* ---------- branches ---------- */
+
+function rowToBranch(r: any): Branch {
+  return {
+    id: r.id,
+    doctorId: r.doctor_id,
+    name: r.name,
+    address: r.address,
+    city: r.city,
+    phone: r.phone,
+    isPrimary: r.is_primary,
+  };
+}
+
+export async function fetchBranches(): Promise<Branch[]> {
+  const { data, error } = await supabase.from("branches").select("*").order("name");
+  if (error) throw error;
+  return (data ?? []).map(rowToBranch);
+}
+
+export async function createBranch(b: Omit<Branch, "id" | "doctorId">): Promise<Branch> {
+  const doctorId = await getCurrentDoctorId();
+  if (!doctorId) throw new Error("Crea tu perfil de doctor primero");
+  const { data, error } = await supabase
+    .from("branches")
+    .insert({
+      doctor_id: doctorId,
+      name: b.name,
+      address: b.address,
+      city: b.city,
+      phone: b.phone,
+      is_primary: b.isPrimary,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return rowToBranch(data);
+}
+
+export async function updateBranch(b: Branch): Promise<void> {
+  const { error } = await supabase
+    .from("branches")
+    .update({
+      name: b.name,
+      address: b.address,
+      city: b.city,
+      phone: b.phone,
+      is_primary: b.isPrimary,
+    })
+    .eq("id", b.id);
+  if (error) throw error;
+}
+
+export async function deleteBranch(id: string): Promise<void> {
+  const { error } = await supabase.from("branches").delete().eq("id", id);
+  if (error) throw error;
 }
 
 /* ---------- patients ---------- */
@@ -64,11 +223,12 @@ export async function fetchPatients(): Promise<Patient[]> {
   const ids = (patients ?? []).map((p) => p.id);
   if (ids.length === 0) return [];
 
-  const { data: appts, error: aErr } = await supabase
-    .from("appointments")
-    .select("*")
-    .in("patient_id", ids);
+  const [{ data: appts, error: aErr }, { data: branches }] = await Promise.all([
+    supabase.from("appointments").select("*").in("patient_id", ids),
+    supabase.from("branches").select("id, name, address"),
+  ]);
   if (aErr) throw aErr;
+  const branchMap = new Map((branches ?? []).map((b: any) => [b.id, b]));
 
   const apptIds = (appts ?? []).map((a) => a.id);
   let products: any[] = [];
@@ -91,7 +251,7 @@ export async function fetchPatients(): Promise<Patient[]> {
   const apptsByPatient = new Map<string, Appointment[]>();
   for (const a of appts ?? []) {
     const list = apptsByPatient.get(a.patient_id) ?? [];
-    list.push(rowToAppointment(a, byAppt.get(a.id) ?? []));
+    list.push(rowToAppointment(a, byAppt.get(a.id) ?? [], branchMap.get(a.branch_id)));
     apptsByPatient.set(a.patient_id, list);
   }
 
@@ -104,23 +264,25 @@ export async function createPatient(
   data: Omit<Patient, "id">,
 ): Promise<Patient> {
   const { data: user } = await supabase.auth.getUser();
+  const doctorId = await getCurrentDoctorId();
+  if (!doctorId) throw new Error("Crea tu perfil de doctor antes de agregar pacientes");
+
   const { data: row, error } = await supabase
     .from("patients")
     .insert({
+      doctor_id: doctorId,
       nombre: data.nombre,
       telefono: data.telefono,
       correo: data.correo,
       tipo_pago: data.tipoPago,
       observaciones: data.observaciones,
-      escaneo_quantico: data.escaneoQuantico,
       fecha_registro: data.fechaRegistro,
       created_by: user.user?.id ?? null,
-    })
+    } as any)
     .select("*")
     .single();
   if (error) throw error;
 
-  // Sync appointments if provided
   if (data.citas && data.citas.length > 0) {
     for (const c of data.citas) {
       await upsertAppointment(row.id, c);
@@ -139,13 +301,11 @@ export async function updatePatient(patient: Patient): Promise<Patient> {
       correo: patient.correo,
       tipo_pago: patient.tipoPago,
       observaciones: patient.observaciones,
-      escaneo_quantico: patient.escaneoQuantico,
       fecha_registro: patient.fechaRegistro,
     })
     .eq("id", patient.id);
   if (error) throw error;
 
-  // Sync citas: fetch existing, delete removed, upsert provided
   const { data: existing } = await supabase
     .from("appointments")
     .select("id")
@@ -182,12 +342,15 @@ export async function upsertAppointment(
     appt.id &&
     /^[0-9a-f-]{36}$/i.test(appt.id);
 
-  const payload = {
+  const doctorId = await getCurrentDoctorId();
+
+  const payload: any = {
     patient_id: patientId,
     fecha: appt.fecha,
     hora: appt.hora || null,
     motivo: appt.motivo,
     estado: appt.estado,
+    branch_id: appt.branchId ?? null,
     sintomas: appt.consulta?.sintomas ?? "",
     diagnostico: appt.consulta?.diagnostico ?? "",
     tratamiento: appt.consulta?.tratamiento ?? "",
@@ -206,14 +369,13 @@ export async function upsertAppointment(
     const { data: user } = await supabase.auth.getUser();
     const { data: row, error } = await supabase
       .from("appointments")
-      .insert({ ...payload, created_by: user.user?.id ?? null })
+      .insert({ ...payload, doctor_id: doctorId, created_by: user.user?.id ?? null })
       .select("id")
       .single();
     if (error) throw error;
     apptId = row.id;
   }
 
-  // Reset products for this appointment
   await supabase.from("appointment_products").delete().eq("appointment_id", apptId);
   if (appt.productos && appt.productos.length > 0) {
     const rows = appt.productos.map((p) => ({
@@ -244,24 +406,29 @@ export async function fetchProducts(): Promise<Product[]> {
     .select("*")
     .order("nombre");
   if (error) throw error;
-  return (data ?? []).map((r) => ({
+  return (data ?? []).map((r: any) => ({
     id: r.id,
     nombre: r.nombre,
     descripcion: r.descripcion ?? "",
     precio: Number(r.precio),
     stock: r.stock,
+    kind: (r.kind as ProductKind) ?? "service",
   }));
 }
 
 export async function createProduct(p: Omit<Product, "id">): Promise<Product> {
+  const doctorId = await getCurrentDoctorId();
+  if (!doctorId) throw new Error("Crea tu perfil de doctor antes de agregar productos");
   const { data, error } = await supabase
     .from("products")
     .insert({
+      doctor_id: doctorId,
       nombre: p.nombre,
       descripcion: p.descripcion,
       precio: p.precio,
       stock: p.stock,
-    })
+      kind: p.kind,
+    } as any)
     .select("*")
     .single();
   if (error) throw error;
@@ -271,5 +438,11 @@ export async function createProduct(p: Omit<Product, "id">): Promise<Product> {
     descripcion: data.descripcion ?? "",
     precio: Number(data.precio),
     stock: data.stock,
+    kind: ((data as any).kind as ProductKind) ?? "service",
   };
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  const { error } = await supabase.from("products").delete().eq("id", id);
+  if (error) throw error;
 }

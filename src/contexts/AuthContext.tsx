@@ -7,13 +7,16 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { clearDoctorCache } from "@/lib/api";
 
-type Role = "admin" | "user";
+export type Role = "admin" | "doctor" | "user";
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   role: Role | null;
+  isAdmin: boolean;
+  isDoctor: boolean;
   fullName: string;
   loading: boolean;
   signOut: () => Promise<void>;
@@ -26,6 +29,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<Role | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isDoctor, setIsDoctor] = useState(false);
   const [fullName, setFullName] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
@@ -38,8 +43,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq("id", uid)
         .maybeSingle(),
     ]);
-    const isAdmin = (roles ?? []).some((r) => r.role === "admin");
-    setRole(isAdmin ? "admin" : "user");
+    const all = (roles ?? []).map((r) => r.role as string);
+    const adm = all.includes("admin");
+    const doc = all.includes("doctor");
+    setIsAdmin(adm);
+    setIsDoctor(doc);
+    setRole(adm ? "admin" : doc ? "doctor" : "user");
     setFullName(profile?.full_name || profile?.email || "");
   };
 
@@ -52,7 +61,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setTimeout(() => loadRoleAndProfile(newSession.user.id), 0);
         } else {
           setRole(null);
+          setIsAdmin(false);
+          setIsDoctor(false);
           setFullName("");
+          clearDoctorCache();
         }
       },
     );
@@ -71,6 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
+    clearDoctorCache();
     await supabase.auth.signOut();
   };
 
@@ -80,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ session, user, role, fullName, loading, signOut, refreshRole }}
+      value={{ session, user, role, isAdmin, isDoctor, fullName, loading, signOut, refreshRole }}
     >
       {children}
     </AuthContext.Provider>

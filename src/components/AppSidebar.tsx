@@ -1,14 +1,17 @@
-import { Activity, LayoutDashboard, Users, BarChart3, UsersRound, Settings, Shield, LogOut, CalendarDays } from "lucide-react";
+import { Activity, LayoutDashboard, Users, BarChart3, UsersRound, Settings, Shield, LogOut, CalendarDays, Building2, Stethoscope } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, type Role } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { fetchCurrentDoctor } from "@/lib/api";
+import type { Doctor } from "@/lib/types";
 
 interface AppSidebarProps {
-  userRole: "admin" | "user";
+  userRole: Role;
   userName: string;
 }
 
@@ -19,60 +22,85 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
   const { toast } = useToast();
   const { signOut } = useAuth();
   const isCollapsed = state === "collapsed";
+  const [doctor, setDoctor] = useState<Doctor | null>(null);
+
+  useEffect(() => {
+    if (userRole === "doctor" || userRole === "admin") {
+      fetchCurrentDoctor().then(setDoctor).catch(() => setDoctor(null));
+    }
+  }, [userRole]);
 
   const adminItems = [
     { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
     { title: "Pacientes", url: "/admin/pacientes", icon: Users },
     { title: "Citas", url: "/admin/citas", icon: CalendarDays },
     { title: "Productos", url: "/admin/productos", icon: Activity },
+    { title: "Sucursales", url: "/admin/sucursales", icon: Building2 },
     { title: "Estadísticas", url: "/admin/estadisticas", icon: BarChart3 },
     { title: "Usuarios", url: "/admin/usuarios", icon: UsersRound },
+    { title: "Configuración", url: "/admin/configuracion", icon: Settings },
+  ];
+
+  const doctorItems = [
+    { title: "Dashboard", url: "/doctor", icon: LayoutDashboard },
+    { title: "Pacientes", url: "/doctor/pacientes", icon: Users },
+    { title: "Citas", url: "/doctor/citas", icon: CalendarDays },
+    { title: "Productos / Servicios", url: "/doctor/productos", icon: Activity },
+    { title: "Sucursales", url: "/doctor/sucursales", icon: Building2 },
+    { title: "Configuración", url: "/doctor/configuracion", icon: Settings },
   ];
 
   const userItems = [
-    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Mis Pacientes", url: "/dashboard/pacientes", icon: Users },
-    { title: "Citas", url: "/dashboard/citas", icon: CalendarDays },
+    { title: "Mis Citas", url: "/mis-citas", icon: CalendarDays },
   ];
 
-  const items = userRole === "admin" ? adminItems : userItems;
+  const items =
+    userRole === "admin" ? adminItems : userRole === "doctor" ? doctorItems : userItems;
 
   const handleLogout = async () => {
     await signOut();
-    toast({
-      title: "Sesión cerrada",
-      description: "Has cerrado sesión exitosamente",
-    });
+    toast({ title: "Sesión cerrada" });
     navigate("/login");
   };
+
+  const brandName = doctor?.displayName || "MediRecord";
+  const brandColor = doctor?.brandColor;
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
       <SidebarContent className="bg-background border-r">
-        {/* Logo */}
         <div className="flex items-center gap-3 p-4 border-b">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-            <Activity className="h-6 w-6 text-primary-foreground" />
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden"
+            style={{ backgroundColor: brandColor ?? "hsl(var(--primary))" }}
+          >
+            {doctor?.logoUrl ? (
+              <img src={doctor.logoUrl} alt={brandName} className="h-full w-full object-cover" />
+            ) : (
+              <Stethoscope className="h-5 w-5 text-white" />
+            )}
           </div>
-          {!isCollapsed && <span className="text-xl font-bold">MediRecord</span>}
+          {!isCollapsed && <span className="text-lg font-bold truncate">{brandName}</span>}
         </div>
 
-        {/* User Profile */}
         <div className="flex items-center gap-3 p-4">
           <Avatar>
             <AvatarFallback className="bg-primary/10">
-              {userRole === "admin" ? <Shield className="h-5 w-5 text-primary" /> : <Users className="h-5 w-5 text-primary" />}
+              {userRole === "admin" ? <Shield className="h-5 w-5 text-primary" /> :
+               userRole === "doctor" ? <Stethoscope className="h-5 w-5 text-primary" /> :
+               <Users className="h-5 w-5 text-primary" />}
             </AvatarFallback>
           </Avatar>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="font-semibold text-sm">{userName}</span>
-              <span className="text-xs text-muted-foreground capitalize">{userRole === "admin" ? "Administrador" : "Usuario"}</span>
+              <span className="font-semibold text-sm truncate">{userName}</span>
+              <span className="text-xs text-muted-foreground capitalize">
+                {userRole === "admin" ? "Administrador" : userRole === "doctor" ? "Doctor/a" : "Paciente"}
+              </span>
             </div>
           )}
         </div>
 
-        {/* Navigation */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -98,7 +126,6 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Logout Button */}
         {!isCollapsed && (
           <div className="mt-auto p-4">
             <Button variant="outline" className="w-full justify-start" onClick={handleLogout}>

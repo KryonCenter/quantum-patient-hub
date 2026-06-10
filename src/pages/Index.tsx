@@ -8,8 +8,13 @@ const Index = () => {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) navigate("/login", { replace: true });
-    else navigate(role === "admin" ? "/admin" : "/dashboard", { replace: true });
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+    if (role === "admin") navigate("/admin", { replace: true });
+    else if (role === "doctor") navigate("/doctor", { replace: true });
+    else navigate("/mis-citas", { replace: true });
   }, [user, role, loading, navigate]);
 
   return null;
