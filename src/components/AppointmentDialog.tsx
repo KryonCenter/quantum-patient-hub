@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, FileText, Package, Plus, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Appointment, AppointmentProduct } from "@/pages/AdminDashboard";
-import type { Product } from "@/pages/AdminProductos";
+import type { Appointment, AppointmentProduct, Product } from "@/lib/types";
+import { fetchProducts } from "@/lib/api";
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -34,9 +34,8 @@ export const AppointmentDialog = ({ open, onOpenChange, onSave, appointment }: A
   });
 
   useEffect(() => {
-    const savedProducts = localStorage.getItem("products");
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
+    if (open) {
+      fetchProducts().then(setProducts).catch(() => setProducts([]));
     }
   }, [open]);
 
@@ -69,35 +68,40 @@ export const AppointmentDialog = ({ open, onOpenChange, onSave, appointment }: A
 
   const handleAddProduct = (productId: string) => {
     const product = products.find(p => p.id === productId);
-    if (product) {
-      const existingProduct = selectedProducts.find(p => p.id === productId);
-      if (existingProduct) {
-        setSelectedProducts(
-          selectedProducts.map(p =>
-            p.id === productId ? { ...p, cantidad: p.cantidad + 1 } : p
-          )
-        );
-      } else {
-        setSelectedProducts([
-          ...selectedProducts,
-          { id: product.id, nombre: product.nombre, precio: product.precio, cantidad: 1 },
-        ]);
-      }
+    if (!product) return;
+    const existing = selectedProducts.find(p => p.productId === productId);
+    if (existing) {
+      setSelectedProducts(
+        selectedProducts.map(p =>
+          p.productId === productId ? { ...p, cantidad: p.cantidad + 1 } : p
+        )
+      );
+    } else {
+      setSelectedProducts([
+        ...selectedProducts,
+        {
+          id: `tmp-${productId}-${Date.now()}`,
+          productId: product.id,
+          nombre: product.nombre,
+          precio: product.precio,
+          cantidad: 1,
+        },
+      ]);
     }
   };
 
-  const handleUpdateQuantity = (productId: string, cantidad: number) => {
+  const handleUpdateQuantity = (lineId: string, cantidad: number) => {
     if (cantidad <= 0) {
-      setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
+      setSelectedProducts(selectedProducts.filter(p => p.id !== lineId));
     } else {
       setSelectedProducts(
-        selectedProducts.map(p => (p.id === productId ? { ...p, cantidad } : p))
+        selectedProducts.map(p => (p.id === lineId ? { ...p, cantidad } : p))
       );
     }
   };
 
-  const handleRemoveProduct = (productId: string) => {
-    setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
+  const handleRemoveProduct = (lineId: string) => {
+    setSelectedProducts(selectedProducts.filter(p => p.id !== lineId));
   };
 
   const getTotalAmount = () => {

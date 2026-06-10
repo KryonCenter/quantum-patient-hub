@@ -1,33 +1,27 @@
-import { ReactNode, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  userRole: "admin" | "user";
-  userName: string;
+  userRole?: "admin" | "user";
+  userName?: string;
   onNewPatient?: () => void;
 }
 
-export function DashboardLayout({ children, userRole, userName, onNewPatient }: DashboardLayoutProps) {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const role = localStorage.getItem("userRole");
-    if (!role) {
-      navigate("/login");
-    }
-  }, [navigate]);
+export function DashboardLayout({ children, onNewPatient }: DashboardLayoutProps) {
+  const { role, fullName, user } = useAuth();
+  const effectiveRole: "admin" | "user" = role ?? "user";
+  const effectiveName = fullName || user?.email || "Usuario";
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar userRole={userRole} userName={userName} />
+        <AppSidebar userRole={effectiveRole} userName={effectiveName} />
         <div className="flex-1 flex flex-col">
-          {/* Header */}
           <header className="flex items-center justify-between border-b bg-card px-6 py-4">
             <SidebarTrigger />
             {onNewPatient && (
@@ -37,11 +31,7 @@ export function DashboardLayout({ children, userRole, userName, onNewPatient }: 
               </Button>
             )}
           </header>
-
-          {/* Main Content */}
-          <main className="flex-1 overflow-auto">
-            {children}
-          </main>
+          <main className="flex-1 overflow-auto">{children}</main>
         </div>
       </div>
     </SidebarProvider>

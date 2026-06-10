@@ -5,6 +5,7 @@ import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AppSidebarProps {
   userRole: "admin" | "user";
@@ -16,6 +17,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
   const isCollapsed = state === "collapsed";
 
   const adminItems = [
@@ -25,7 +27,6 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
     { title: "Productos", url: "/admin/productos", icon: Activity },
     { title: "Estadísticas", url: "/admin/estadisticas", icon: BarChart3 },
     { title: "Usuarios", url: "/admin/usuarios", icon: UsersRound },
-    { title: "Configuración", url: "/admin/configuracion", icon: Settings },
   ];
 
   const userItems = [
@@ -36,8 +37,8 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
 
   const items = userRole === "admin" ? adminItems : userItems;
 
-  const handleLogout = () => {
-    localStorage.removeItem("userRole");
+  const handleLogout = async () => {
+    await signOut();
     toast({
       title: "Sesión cerrada",
       description: "Has cerrado sesión exitosamente",
