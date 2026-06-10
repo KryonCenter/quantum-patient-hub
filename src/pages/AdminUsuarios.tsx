@@ -1,174 +1,106 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
-import { Users, Shield, UserCheck, Search, Plus } from "lucide-react";
+import { Users, Shield, UserCheck, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface User {
+interface AppUser {
   id: string;
   nombre: string;
   correo: string;
-  rol: "admin" | "usuario";
-  estado: "activo" | "inactivo";
+  isAdmin: boolean;
   fechaRegistro: string;
 }
 
 const AdminUsuarios = () => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { user: currentUser } = useAuth();
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: "1",
-      nombre: "Admin Principal",
-      correo: "admin@example.com",
-      rol: "admin",
-      estado: "activo",
-      fechaRegistro: "2024-01-15",
-    },
-    {
-      id: "2",
-      nombre: "Juan Pérez",
-      correo: "juan@example.com",
-      rol: "usuario",
-      estado: "activo",
-      fechaRegistro: "2024-03-20",
-    },
-    {
-      id: "3",
-      nombre: "María García",
-      correo: "maria@example.com",
-      rol: "usuario",
-      estado: "activo",
-      fechaRegistro: "2024-05-10",
-    },
-  ]);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const [newUser, setNewUser] = useState({
-    nombre: "",
-    correo: "",
-    rol: "usuario" as "admin" | "usuario",
-    password: "",
-  });
-
-  const handleAddUser = () => {
-    const user: User = {
-      id: Date.now().toString(),
-      nombre: newUser.nombre,
-      correo: newUser.correo,
-      rol: newUser.rol,
-      estado: "activo",
-      fechaRegistro: new Date().toISOString().split("T")[0],
-    };
-    setUsers([...users, user]);
-    setIsDialogOpen(false);
-    setNewUser({ nombre: "", correo: "", rol: "usuario", password: "" });
-    toast({
-      title: "Usuario creado",
-      description: "El usuario ha sido registrado exitosamente",
-    });
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [{ data: profiles, error: pErr }, { data: roles, error: rErr }] = await Promise.all([
+        supabase.from("profiles").select("id, full_name, email, created_at").order("created_at", { ascending: false }),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
+      if (pErr) throw pErr;
+      if (rErr) throw rErr;
+      const admins = new Set((roles ?? []).filter((r) => r.role === "admin").map((r) => r.user_id));
+      setUsers((profiles ?? []).map((p) => ({
+        id: p.id,
+        nombre: p.full_name ?? "(sin nombre)",
+        correo: p.email ?? "",
+        isAdmin: admins.has(p.id),
+        fechaRegistro: (p.created_at as string).split("T")[0],
+      })));
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const activeUsers = users.filter(u => u.estado === "activo").length;
-  const adminUsers = users.filter(u => u.rol === "admin").length;
+  useEffect(() => { load(); }, []);
+
+  const toggleAdmin = async (u: AppUser) => {
+    try {
+      if (u.isAdmin) {
+        const { error } = await supabase.from("user_roles").delete().eq("user_id", u.id).eq("role", "admin");
+        if (error) throw error;
+        toast({ title: "Rol actualizado", description: `${u.nombre} ya no es administrador` });
+      } else {
+        const { error } = await supabase.from("user_roles").insert({ user_id: u.id, role: "admin" });
+        if (error) throw error;
+        toast({ title: "Rol actualizado", description: `${u.nombre} ahora es administrador` });
+      }
+      await load();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const filtered = users.filter((u) =>
+    u.nombre.toLowerCase().includes(search.toLowerCase()) ||
+    u.correo.toLowerCase().includes(search.toLowerCase())
+  );
+  const adminUsers = users.filter((u) => u.isAdmin).length;
 
   return (
-    <DashboardLayout userRole="admin" userName="Administrador">
+    <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
-            <p className="text-muted-foreground">Administra los usuarios del sistema</p>
-          </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo Usuario
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Agregar Nuevo Usuario</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="nombre">Nombre Completo</Label>
-                  <Input
-                    id="nombre"
-                    value={newUser.nombre}
-                    onChange={(e) => setNewUser({ ...newUser, nombre: e.target.value })}
-                    placeholder="Nombre del usuario"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="correo">Correo Electrónico</Label>
-                  <Input
-                    id="correo"
-                    type="email"
-                    value={newUser.correo}
-                    onChange={(e) => setNewUser({ ...newUser, correo: e.target.value })}
-                    placeholder="correo@ejemplo.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    placeholder="Contraseña"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="rol">Rol</Label>
-                  <Select value={newUser.rol} onValueChange={(value: "admin" | "usuario") => setNewUser({ ...newUser, rol: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="usuario">Usuario</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleAddUser} className="w-full">
-                  Crear Usuario
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+        <div>
+          <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
+          <p className="text-muted-foreground">
+            Los nuevos usuarios se registran desde la página de inicio de sesión. Aquí puedes asignar el rol de administrador.
+          </p>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard title="Total Usuarios" value={users.length} icon={Users} colorClass="bg-primary/10" />
-          <StatCard title="Usuarios Activos" value={activeUsers} icon={UserCheck} colorClass="bg-emerald-100" />
+          <StatCard title="Usuarios" value={users.length - adminUsers} icon={UserCheck} colorClass="bg-emerald-100" />
           <StatCard title="Administradores" value={adminUsers} icon={Shield} colorClass="bg-blue-100" />
         </div>
 
-        {/* Search */}
         <Card>
           <CardContent className="p-6">
-            <div className="flex gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar por nombre o correo..." className="pl-10" />
-              </div>
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Buscar por nombre o correo..." className="pl-10"
+                value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </CardContent>
         </Card>
 
-        {/* Users Table */}
         <Card>
           <CardContent className="p-6">
             <Table>
@@ -177,26 +109,35 @@ const AdminUsuarios = () => {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Correo</TableHead>
                   <TableHead>Rol</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fecha Registro</TableHead>
+                  <TableHead>Registro</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.nombre}</TableCell>
-                    <TableCell>{user.correo}</TableCell>
+                {loading ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Cargando...</TableCell></TableRow>
+                ) : filtered.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No hay usuarios</TableCell></TableRow>
+                ) : filtered.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-medium">{u.nombre}</TableCell>
+                    <TableCell>{u.correo}</TableCell>
                     <TableCell>
-                      <Badge variant={user.rol === "admin" ? "default" : "secondary"}>
-                        {user.rol === "admin" ? "Administrador" : "Usuario"}
+                      <Badge variant={u.isAdmin ? "default" : "secondary"}>
+                        {u.isAdmin ? "Administrador" : "Usuario"}
                       </Badge>
                     </TableCell>
+                    <TableCell>{u.fechaRegistro}</TableCell>
                     <TableCell>
-                      <Badge variant={user.estado === "activo" ? "default" : "secondary"}>
-                        {user.estado === "activo" ? "Activo" : "Inactivo"}
-                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={u.id === currentUser?.id}
+                        onClick={() => toggleAdmin(u)}
+                      >
+                        {u.isAdmin ? "Quitar admin" : "Hacer admin"}
+                      </Button>
                     </TableCell>
-                    <TableCell>{new Date(user.fechaRegistro).toLocaleDateString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

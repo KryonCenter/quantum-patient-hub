@@ -1,27 +1,40 @@
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { StatCard } from "@/components/StatCard";
 import { Users, Activity, Package, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Patient } from "@/lib/types";
+import { fetchPatients, fetchProducts } from "@/lib/api";
 
 const AdminDashboardNew = () => {
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [productCount, setProductCount] = useState(0);
+
+  useEffect(() => {
+    fetchPatients().then(setPatients).catch(() => {});
+    fetchProducts().then((p) => setProductCount(p.length)).catch(() => {});
+  }, []);
+
+  const cuanticoCount = patients.filter((p) => p.escaneoQuantico).length;
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayCount = patients.filter((p) => p.fechaRegistro === todayStr).length;
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthCount = patients.filter((p) => p.fechaRegistro.startsWith(currentMonth)).length;
+
   return (
-    <DashboardLayout userRole="admin" userName="Administrador">
+    <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">Panel de Administración</h1>
-          <p className="text-muted-foreground">Bienvenido, Administrador. Aquí está el resumen de tu clínica.</p>
+          <p className="text-muted-foreground">Resumen de tu clínica.</p>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-4">
           <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Pacientes</p>
-                  <h3 className="text-3xl font-bold text-primary">0</h3>
-                  <p className="text-xs text-emerald-600 mt-1">↑ 0.0% vs mes anterior</p>
+                  <h3 className="text-3xl font-bold text-primary">{patients.length}</h3>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
                   <Users className="h-6 w-6 text-primary" />
@@ -35,8 +48,7 @@ const AdminDashboardNew = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Escaneo Cuántico</p>
-                  <h3 className="text-3xl font-bold text-emerald-700">0</h3>
-                  <p className="text-xs text-muted-foreground mt-1">0% del total</p>
+                  <h3 className="text-3xl font-bold text-emerald-700">{cuanticoCount}</h3>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-emerald-200 flex items-center justify-center">
                   <Activity className="h-6 w-6 text-emerald-700" />
@@ -49,9 +61,8 @@ const AdminDashboardNew = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Productos Vendidos</p>
-                  <h3 className="text-3xl font-bold text-blue-700">0</h3>
-                  <p className="text-xs text-muted-foreground mt-1">0% compraron</p>
+                  <p className="text-sm text-muted-foreground">Productos</p>
+                  <h3 className="text-3xl font-bold text-blue-700">{productCount}</h3>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-blue-200 flex items-center justify-center">
                   <Package className="h-6 w-6 text-blue-700" />
@@ -65,8 +76,8 @@ const AdminDashboardNew = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Este Mes</p>
-                  <h3 className="text-3xl font-bold text-primary">0</h3>
-                  <p className="text-xs text-muted-foreground mt-1">0 registros hoy</p>
+                  <h3 className="text-3xl font-bold text-primary">{monthCount}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{todayCount} hoy</p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-primary" />
@@ -76,38 +87,29 @@ const AdminDashboardNew = () => {
           </Card>
         </div>
 
-        {/* Charts */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                <CardTitle>Actividad Semanal</CardTitle>
+        <Card>
+          <CardHeader>
+            <CardTitle>Pacientes Recientes</CardTitle>
+            <CardDescription>Últimos registros</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {patients.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No hay pacientes registrados</p>
+            ) : (
+              <div className="space-y-2">
+                {patients.slice(0, 8).map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <div className="font-medium">{p.nombre}</div>
+                      <div className="text-sm text-muted-foreground">{p.correo}</div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">{p.fechaRegistro}</div>
+                  </div>
+                ))}
               </div>
-              <CardDescription>Pacientes registrados en los últimos 7 días</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] flex items-center justify-center">
-                <p className="text-muted-foreground">No hay datos de actividad</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                <CardTitle>Métodos de Pago</CardTitle>
-              </div>
-              <CardDescription>Distribución por tipo de pago</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] flex items-center justify-center">
-                <p className="text-muted-foreground">No hay datos de pagos</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
