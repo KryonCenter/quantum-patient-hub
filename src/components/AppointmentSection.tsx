@@ -4,7 +4,7 @@ import { Calendar, Plus, Trash2, Clock, Package, Edit, FileText } from "lucide-r
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AppointmentDialog } from "@/components/AppointmentDialog";
-import type { Appointment } from "@/pages/AdminDashboard";
+import type { Appointment } from "@/lib/types";
 import {
   AlertDialog,
   AlertDialogAction,

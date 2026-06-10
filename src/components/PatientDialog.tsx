@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { User, Phone, Mail, CreditCard, FileText, Activity, X } from "lucide-react";
 import { AppointmentSection } from "@/components/AppointmentSection";
-import type { Patient, Appointment } from "@/pages/AdminDashboard";
+import type { Patient, Appointment } from "@/lib/types";
 import type { Product } from "@/pages/AdminProductos";
 
 interface PatientDialogProps {
