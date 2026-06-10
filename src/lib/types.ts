@@ -1,9 +1,8 @@
 // Shared domain types used across the UI.
-// Names are kept in Spanish to match existing components.
 
 export interface AppointmentProduct {
-  id: string; // local id in the form (uuid of appointment_products row or local temp id)
-  productId?: string | null; // reference to products.id (nullable for free-form items)
+  id: string;
+  productId?: string | null;
   nombre: string;
   precio: number;
   cantidad: number;
@@ -20,10 +19,13 @@ export type AppointmentStatus = "pendiente" | "completada" | "cancelada";
 
 export interface Appointment {
   id: string;
-  fecha: string;          // yyyy-MM-dd
-  hora: string;           // HH:mm
+  fecha: string;
+  hora: string;
   motivo: string;
   estado: AppointmentStatus;
+  branchId?: string | null;
+  branchName?: string | null;
+  branchAddress?: string | null;
   productos: AppointmentProduct[];
   consulta: ConsultationInfo;
 }
@@ -35,10 +37,11 @@ export interface Patient {
   correo: string;
   tipoPago: string;
   observaciones: string;
-  fechaRegistro: string;  // yyyy-MM-dd
-  escaneoQuantico: boolean;
+  fechaRegistro: string;
   citas?: Appointment[];
 }
+
+export type ProductKind = "service" | "physical";
 
 export interface Product {
   id: string;
@@ -46,4 +49,26 @@ export interface Product {
   descripcion: string;
   precio: number;
   stock: number;
+  kind: ProductKind;
+}
+
+export interface Doctor {
+  id: string;
+  userId: string;
+  displayName: string;
+  specialty: string | null;
+  logoUrl: string | null;
+  brandColor: string;
+  whatsappPhone: string | null;
+  googleCalendarConnected: boolean;
+}
+
+export interface Branch {
+  id: string;
+  doctorId: string;
+  name: string;
+  address: string;
+  city: string | null;
+  phone: string | null;
+  isPrimary: boolean;
 }

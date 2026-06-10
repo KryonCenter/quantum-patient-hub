@@ -7,14 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  userRole?: "admin" | "user";
-  userName?: string;
   onNewPatient?: () => void;
 }
 
 export function DashboardLayout({ children, onNewPatient }: DashboardLayoutProps) {
   const { role, fullName, user } = useAuth();
-  const effectiveRole: "admin" | "user" = role ?? "user";
+  const effectiveRole = role ?? "user";
   const effectiveName = fullName || user?.email || "Usuario";
 
   return (

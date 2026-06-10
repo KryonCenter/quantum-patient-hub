@@ -13,8 +13,9 @@ import AdminProductos from "./pages/AdminProductos";
 import AdminEstadisticas from "./pages/AdminEstadisticas";
 import AdminUsuarios from "./pages/AdminUsuarios";
 import AdminCitas from "./pages/AdminCitas";
-import UserDashboardNew from "./pages/UserDashboardNew";
-import DashboardPacientes from "./pages/DashboardPacientes";
+import DoctorDashboard from "./pages/UserDashboardNew";
+import DoctorBranches from "./pages/DoctorBranches";
+import DoctorConfig from "./pages/DoctorConfig";
 import UserCitas from "./pages/UserCitas";
 import NotFound from "./pages/NotFound";
 
@@ -31,16 +32,26 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
 
+            {/* Admin */}
             <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboardNew /></ProtectedRoute>} />
             <Route path="/admin/pacientes" element={<ProtectedRoute requireAdmin><AdminPacientes /></ProtectedRoute>} />
             <Route path="/admin/citas" element={<ProtectedRoute requireAdmin><AdminCitas /></ProtectedRoute>} />
             <Route path="/admin/productos" element={<ProtectedRoute requireAdmin><AdminProductos /></ProtectedRoute>} />
+            <Route path="/admin/sucursales" element={<ProtectedRoute requireAdmin><DoctorBranches /></ProtectedRoute>} />
             <Route path="/admin/estadisticas" element={<ProtectedRoute requireAdmin><AdminEstadisticas /></ProtectedRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedRoute requireAdmin><AdminUsuarios /></ProtectedRoute>} />
+            <Route path="/admin/configuracion" element={<ProtectedRoute requireAdmin><DoctorConfig /></ProtectedRoute>} />
 
-            <Route path="/dashboard" element={<ProtectedRoute><UserDashboardNew /></ProtectedRoute>} />
-            <Route path="/dashboard/pacientes" element={<ProtectedRoute><DashboardPacientes /></ProtectedRoute>} />
-            <Route path="/dashboard/citas" element={<ProtectedRoute><UserCitas /></ProtectedRoute>} />
+            {/* Doctor */}
+            <Route path="/doctor" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorDashboard /></ProtectedRoute>} />
+            <Route path="/doctor/pacientes" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><AdminPacientes /></ProtectedRoute>} />
+            <Route path="/doctor/citas" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><AdminCitas /></ProtectedRoute>} />
+            <Route path="/doctor/productos" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><AdminProductos /></ProtectedRoute>} />
+            <Route path="/doctor/sucursales" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorBranches /></ProtectedRoute>} />
+            <Route path="/doctor/configuracion" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorConfig /></ProtectedRoute>} />
+
+            {/* Patient */}
+            <Route path="/mis-citas" element={<ProtectedRoute><UserCitas /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
