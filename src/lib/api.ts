@@ -157,15 +157,31 @@ export async function upsertDoctor(input: {
 export async function uploadDoctorLogo(file: File): Promise<string> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("No autenticado");
-  const ext = file.name.split(".").pop() || "png";
-  const path = `${u.user.id}/logo-${Date.now()}.${ext}`;
+  const ext = (file.name.split(".").pop() || "png").toLowerCase();
+  // Stable path so upsert truly replaces the previous logo
+  const path = `${u.user.id}/logo.${ext}`;
+  // Remove any previous logo files (different extensions) so we don't leave stale ones
+  const { data: existing } = await supabase.storage
+    .from("doctor-logos")
+    .list(u.user.id);
+  const toRemove = (existing ?? [])
+    .filter((f) => f.name.startsWith("logo."))
+    .map((f) => `${u.user!.id}/${f.name}`);
+  if (toRemove.length > 0) {
+    await supabase.storage.from("doctor-logos").remove(toRemove);
+  }
   const { error } = await supabase.storage
     .from("doctor-logos")
-    .upload(path, file, { upsert: true });
+    .upload(path, file, { upsert: true, cacheControl: "0", contentType: file.type });
   if (error) throw error;
-  const { data } = await supabase.storage.from("doctor-logos").createSignedUrl(path, 60 * 60 * 24 * 365);
-  return data?.signedUrl ?? path;
+  const { data } = await supabase.storage
+    .from("doctor-logos")
+    .createSignedUrl(path, 60 * 60 * 24 * 365);
+  // Cache-bust so the <img> reloads
+  const url = data?.signedUrl ?? path;
+  return `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
 }
+
 
 /* ---------- branches ---------- */
 
