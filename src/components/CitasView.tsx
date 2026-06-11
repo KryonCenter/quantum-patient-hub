@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar as CalendarIcon, Clock, Plus, User, Edit, Trash2, Package, FileText, Building2 } from "lucide-react";
 import { AppointmentDialog } from "@/components/AppointmentDialog";
 import { AppointmentConfirmationCard } from "@/components/AppointmentConfirmationCard";
+import { PatientPicker } from "@/components/PatientPicker";
 import type { Appointment, Doctor, Patient } from "@/lib/types";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
