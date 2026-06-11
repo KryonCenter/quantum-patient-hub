@@ -194,6 +194,7 @@ function rowToBranch(r: any): Branch {
     city: r.city,
     phone: r.phone,
     isPrimary: r.is_primary,
+    roomCount: r.room_count ?? 1,
   };
 }
 
@@ -215,7 +216,8 @@ export async function createBranch(b: Omit<Branch, "id" | "doctorId">): Promise<
       city: b.city,
       phone: b.phone,
       is_primary: b.isPrimary,
-    })
+      room_count: b.roomCount ?? 1,
+    } as any)
     .select("*")
     .single();
   if (error) throw error;
@@ -231,7 +233,8 @@ export async function updateBranch(b: Branch): Promise<void> {
       city: b.city,
       phone: b.phone,
       is_primary: b.isPrimary,
-    })
+      room_count: b.roomCount ?? 1,
+    } as any)
     .eq("id", b.id);
   if (error) throw error;
 }
@@ -240,6 +243,48 @@ export async function deleteBranch(id: string): Promise<void> {
   const { error } = await supabase.from("branches").delete().eq("id", id);
   if (error) throw error;
 }
+
+/* ---------- branch rooms (consultorios) ---------- */
+
+export async function fetchBranchRooms(branchId?: string): Promise<import("@/lib/types").BranchRoom[]> {
+  let q = supabase.from("branch_rooms" as any).select("*").order("name");
+  if (branchId) q = q.eq("branch_id", branchId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    branchId: r.branch_id,
+    doctorId: r.doctor_id,
+    name: r.name,
+    assignedDoctorId: r.assigned_doctor_id ?? null,
+  }));
+}
+
+export async function createBranchRoom(input: { branchId: string; name: string; assignedDoctorId?: string | null }) {
+  const doctorId = await getCurrentDoctorId();
+  if (!doctorId) throw new Error("Crea tu perfil de doctor primero");
+  const { error } = await supabase.from("branch_rooms" as any).insert({
+    branch_id: input.branchId,
+    doctor_id: doctorId,
+    name: input.name,
+    assigned_doctor_id: input.assignedDoctorId ?? null,
+  } as any);
+  if (error) throw error;
+}
+
+export async function updateBranchRoom(id: string, input: { name?: string; assignedDoctorId?: string | null }) {
+  const patch: any = {};
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.assignedDoctorId !== undefined) patch.assigned_doctor_id = input.assignedDoctorId;
+  const { error } = await supabase.from("branch_rooms" as any).update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteBranchRoom(id: string) {
+  const { error } = await supabase.from("branch_rooms" as any).delete().eq("id", id);
+  if (error) throw error;
+}
+
 
 /* ---------- patients ---------- */
 
