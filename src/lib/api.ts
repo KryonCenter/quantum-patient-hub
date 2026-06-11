@@ -57,17 +57,31 @@ function rowToAppointment(row: any, products: any[] = [], branch?: any): Appoint
 }
 
 function rowToPatient(row: any, appointments: Appointment[] = []): Patient {
+  const firstName = row.first_name ?? "";
+  const lastNamePaterno = row.last_name_paterno ?? "";
+  const lastNameMaterno = row.last_name_materno ?? "";
+  const computed = [firstName, lastNamePaterno, lastNameMaterno].filter(Boolean).join(" ").trim();
   return {
     id: row.id,
-    nombre: row.nombre,
+    nombre: computed || row.nombre || "",
+    firstName,
+    lastNamePaterno,
+    lastNameMaterno,
     telefono: row.telefono ?? "",
     correo: row.correo ?? "",
     tipoPago: row.tipo_pago ?? "",
     observaciones: row.observaciones ?? "",
     fechaRegistro: row.fecha_registro,
+    birthDate: row.birth_date ?? null,
+    locality: row.locality ?? null,
+    guardianPatientId: row.guardian_patient_id ?? null,
+    guardianFirstName: row.guardian_first_name ?? null,
+    guardianLastNamePaterno: row.guardian_last_name_paterno ?? null,
+    guardianLastNameMaterno: row.guardian_last_name_materno ?? null,
     citas: appointments,
   };
 }
+
 
 /* ---------- doctor ---------- */
 
