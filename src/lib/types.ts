@@ -104,4 +104,5 @@ export interface Branch {
   city: string | null;
   phone: string | null;
   isPrimary: boolean;
+  roomCount?: number;
 }
