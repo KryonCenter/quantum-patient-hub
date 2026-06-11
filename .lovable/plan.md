@@ -1,85 +1,111 @@
+# Plan de expansión de la plataforma
 
-# Plataforma multi-doctor
+Esto es grande. Lo divido en bloques para implementarse en orden. Cada bloque deja la app utilizable.
 
-Voy a convertir la app en una plataforma multi-tenant donde cada doctor administra su propio espacio: pacientes, productos/servicios, sucursales, citas, branding y Google Calendar. Quitamos el escaneo cuántico del paciente.
+## Bloque 1 — Datos de pacientes y tutores
 
-## 1. Modelo de datos (migración)
+- Separar `name` en `first_name`, `last_name_paterno`, `last_name_materno`.
+- Agregar `birth_date`, `locality` (localidad), eliminar selección de tipo de pago del alta.
+- Si edad < 18 → obligar tutor: nombres, apellidos, y buscador del tutor entre pacientes/usuarios; si no existe, alta rápida y vinculación (`guardian_patient_id`).
+- En el diálogo de cita: barra de búsqueda (nombre o teléfono) además del dropdown de paciente.
 
-Nuevas tablas y cambios:
+## Bloque 2 — Módulos y roles configurables
 
-- `doctors` — perfil profesional del doctor
-  - `user_id` (FK auth.users, único), `display_name`, `specialty`, `logo_url`, `brand_color`, `whatsapp_phone`, `google_calendar_connected` (bool), `google_refresh_token` (cifrado / vault), `google_calendar_id`
-- `branches` (sucursales) — 1 a 5 por doctor
-  - `doctor_id`, `name`, `address`, `city`, `phone`, `is_primary`
-  - límite: trigger que valida ≤5 por doctor
-- `patients` — agregar `doctor_id` (FK), quitar campos de escaneo cuántico
-- `products` — agregar `doctor_id` (FK), agregar `kind` (`service` | `physical`)
-- `appointments` — agregar `doctor_id` (FK), `branch_id` (FK), `reason` (motivo)
-  - `appointment_products` ya existe — sigue siendo el detalle de servicios/productos
-- Nuevo rol `doctor` en enum `app_role` (además de `admin`, `user`)
-- RLS: cada doctor solo ve filas donde `doctor_id = auth.uid()`; admin ve todo
-- Storage bucket `doctor-logos` (público de lectura)
+Nuevos roles: `recepcion`, `asistente`, `monitor`, `super_admin` (además de `admin`, `doctor`, `user`).
 
-## 2. Autenticación y roles
+- Tabla `doctor_modules` (citas, pos, inventario, monitor, recordatorios, reportes, google_calendar) con booleanos por doctor; gestionable por `super_admin`.
+- Tabla `doctor_staff` (usuarios ligados a un doctor con rol específico). El sidebar y rutas se filtran por módulos habilitados y rol.
+- Página "Gestión de usuarios" del super admin: cambiar rol de cualquier cuenta (paciente ↔ doctor ↔ recepción, etc.) y asignar staff a doctor.
+- Al alta de doctor: se crea automáticamente un usuario `monitor` por doctor (credenciales mostradas al admin/dr).
 
-- Mantener Email + Google para todos
-- Al registrarse, el usuario elige "Soy doctor" → se crea fila en `doctors` y rol `doctor`
-- Los pacientes pueden registrarse por correo (rol `user`) y verán solo sus propias citas
+## Bloque 3 — Punto de venta (POS)
 
-## 3. Páginas nuevas / refactor
+- Tabla `sales` (doctor_id, branch_id, patient_id, appointment_id, total, status, created_by) + `sale_items` (product_id o servicio libre, qty, unit_price editable, subtotal) + `sale_payments` (method: `efectivo` | `transferencia` | `tarjeta`, amount, reference para transferencia/tarjeta).
+- Pantalla "Cobro" precarga los productos/servicios de la cita; el doctor puede:
+  - Editar precio (descuento), quitar ítems, agregar productos/servicios.
+  - Dividir pago en hasta 3 métodos simultáneos con sus referencias.
+- Si el producto es `physical` y hay inventario → descuenta stock.
+- Cierre de cita marca la venta como `paid` y dispara evento al monitor.
 
-- `/doctor/dashboard` — panel del doctor
-- `/doctor/pacientes` — solo sus pacientes (CRUD, búsqueda)
-- `/doctor/productos` — sus productos/servicios con campo "tipo: servicio | físico"
-- `/doctor/sucursales` — agregar/editar hasta 5 sucursales
-- `/doctor/citas` — citas con selector de paciente, sucursal y producto/servicio
-- `/doctor/configuracion` — logo, color, WhatsApp, conectar Google Calendar
-- `/admin/*` — sigue existiendo para super-admin (ve todo)
-- Quitar widgets/campos de "escaneo cuántico" en `PatientDialog`, dashboards y estadísticas
+## Bloque 4 — Reportes
 
-## 4. Google Calendar
+- Página "Reportes" (admin de doctor, super admin): ventas por semana / quincena / mes / rango personalizado. Filtros por sucursal, método de pago, doctor (super admin).
+- Tarjetas: ingresos totales, número de ventas, ticket promedio, desglose por método.
 
-- OAuth per-user (cada doctor conecta su propia cuenta)
-- Edge functions:
-  - `google-calendar-connect` — inicia OAuth, guarda refresh token
-  - `google-calendar-sync` — al crear/editar/eliminar una cita, crea/actualiza/borra el evento en su calendario
-- Requiere que el doctor configure credenciales OAuth de Google (le pido `GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_CLIENT_SECRET` como secretos del proyecto)
+## Bloque 5 — Agenda inteligente
 
-## 5. Notificación de cita al paciente
+- Tabla `doctor_schedules` (doctor_id, branch_id, weekday, start_time, end_time, slot_minutes).
+- Tabla `branch_rooms` (sucursal → consultorios) y `room_doctor_assignments` (qué doctor atiende en qué consultorio).
+- En el dashboard del doctor: configuración de días/horarios laborales por sucursal y duración de slot.
+- Calendario de paciente: muestra solo huecos disponibles considerando citas existentes.
+- Modo "solicitud abierta": el paciente puede pedir cita sin fecha/hora; queda `status='requested'` para que el doctor confirme fecha.
 
-Al crear una cita, mostrar al doctor una **tarjeta de confirmación** con:
-- Nombre del paciente, doctor, fecha/hora
-- Motivo + producto/servicio
-- Sucursal: nombre + dirección
-- Logo del doctor
+## Bloque 6 — Flujo paciente mejorado
 
-Acciones en la tarjeta:
-- **Enviar por email** — edge function `send-appointment-email` (usa Lovable Emails, plantilla React Email con branding del doctor)
-- **Enviar por WhatsApp** — botón que abre `https://wa.me/<tel>?text=<mensaje>` con el resumen pre-formateado (no requiere API, es click-to-chat)
+- Al ser paciente: la cita toma sus datos automáticamente.
+- Selector "para mí / para un menor que tutelo" (si tiene menores vinculados).
+- Si el menor no existe: alta rápida y la cita queda `pending_validation` hasta que el doctor apruebe.
+- Selección de doctor primero (todos los doctores visibles), luego sucursal y productos/servicios filtrados a ese doctor.
 
-## 6. Detalles técnicos
+## Bloque 7 — Recordatorios y notificaciones
 
-```text
-auth.users ──┬─< doctors ──┬─< branches (≤5)
-             │             ├─< patients
-             │             ├─< products (kind: service|physical)
-             │             └─< appointments ──< appointment_products
-             └─< user_roles (admin|doctor|user)
-```
+- Tabla `reminder_settings` por doctor: horas configurables (ej. 08:00) y días (1 día antes, mismo día, 2 horas antes/check-in).
+- Plantilla de WhatsApp configurable por doctor (`whatsapp_template`) con tokens: `{paciente}`, `{hora}`, `{doctor}`, `{sucursal}`.
+- Edge function `send-reminders` + cron (pg_cron, cada 15 min) que evalúa qué citas requieren recordatorio según settings.
+- Tabla `notifications` (doctor_id, type, payload, read_at). Botón de campana en el header del doctor con badge.
+- Al confirmar el paciente en la app → notificación al doctor.
+- Arreglar `send-appointment-email` (revisar dominio/sender) para que el correo llegue. Si no hay dominio verificado → guiar setup.
 
-- Helper SQL `is_doctor_owner(row_doctor_id)` para policies
-- Edge functions: `google-calendar-connect`, `google-calendar-sync`, `send-appointment-email`
-- Plantilla email: `supabase/functions/_shared/transactional-email-templates/appointment-confirmation.tsx`
+## Bloque 8 — Pantalla Monitor (Smart TV)
 
-## 7. Lo que requiere acción del usuario
+- Ruta pública con login: `/monitor`. Sin sidebar, layout full-screen.
+- Encabezado: nombre de sucursal (selección al iniciar sesión).
+- Columna izquierda: lista de pacientes del día en orden.
+- Columna derecha: por consultorio, paciente actual y siguiente.
+- Estados manejables desde la cuenta del asistente/doctor: `en_espera`, `en_consultorio`, `terminado`. Se refleja en tiempo real (Supabase realtime).
+- Al cerrar la cita / cobrar → automáticamente pasa al siguiente.
 
-1. Confirmar el plan
-2. Si quieres Google Calendar real ahora: necesito que crees credenciales OAuth en Google Cloud Console (client ID + secret) y te las pediré con el formulario seguro. Si prefieres, lo dejo como botón "próximamente" y lo conectamos después.
-3. Para emails con tu propio dominio (opcional): puedo configurar el dominio de envío; si no, usamos el remitente por defecto de Lovable.
+## Bloque 9 — Sucursales y consultorios
 
-## 8. Lo que se elimina
+- Extender `branches` con `room_count`.
+- Tabla `branch_rooms` con `name` ("Consultorio 1") y asignación de doctor responsable.
 
-- Toda referencia a "escaneo cuántico" en pacientes, dashboard y estadísticas
-- El campo y métricas asociadas
+## Bloque 10 — Inventario
 
-¿Confirmas el plan y me dices si seguimos con Google Calendar ahora (necesito las credenciales) o lo dejamos como "próximamente"?
+- Extender `products` con `stock`, `min_stock`, `track_inventory` (bool).
+- Tabla `inventory_movements` (product_id, qty, type: `entrada`|`salida`|`ajuste`, reason, sale_id?).
+- Página "Inventario" para alta de movimientos y visualización de stock.
+
+## Bloque 11 — Google Calendar real
+
+- Botón "Conectar Google Calendar" en config del doctor.
+- Edge functions `google-oauth-init` y `google-oauth-callback` con credenciales OAuth (requiere CLIENT_ID / CLIENT_SECRET del usuario en Google Cloud Console).
+- Tras conectar, sincronizar cada cita creada/modificada/cancelada.
+
+## Bloque 12 — Bugs y pulido
+
+- Logo del doctor no se reemplaza: usar `upsert: true` y `cacheControl: '0'` en el `storage.upload`; añadir `?v={timestamp}` a la URL.
+
+---
+
+## Cómo te propongo entregarlo
+
+Por tamaño, no puedo (ni te conviene) hacer todo en una sola pasada. Propongo este orden de entregas, cada una probable y desplegable:
+
+1. **Bloques 1, 9, 12** — datos pacientes/tutores + consultorios + fix logo.
+2. **Bloque 2** — módulos y roles + página super admin.
+3. **Bloques 5 y 6** — agenda inteligente + flujo paciente.
+4. **Bloques 3 y 10** — POS + inventario.
+5. **Bloque 4** — reportes.
+6. **Bloque 7** — recordatorios + plantilla WhatsApp + notificaciones (incluye fix del correo).
+7. **Bloque 8** — monitor TV.
+8. **Bloque 11** — Google Calendar real (necesitaré tus credenciales OAuth).
+
+## Preguntas para arrancar
+
+1. ¿Confirmamos este orden, o prefieres priorizar algo distinto (p. ej. POS antes que agenda)?
+2. Para el usuario "super admin" que habilita módulos: ¿usamos tu cuenta actual de admin o creas una nueva dedicada?
+3. ¿El monitor TV debe ser por sucursal o por consultorio (uno por TV)?
+4. Para el correo que no llegó: ¿quieres configurar dominio propio (recomendado) o usamos el remitente por defecto? Si no hay dominio, los correos pueden caer a spam o ser bloqueados.
+
+Una vez confirmes, empiezo con el Bloque 1.
