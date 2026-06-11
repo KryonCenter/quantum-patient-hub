@@ -57,17 +57,31 @@ function rowToAppointment(row: any, products: any[] = [], branch?: any): Appoint
 }
 
 function rowToPatient(row: any, appointments: Appointment[] = []): Patient {
+  const firstName = row.first_name ?? "";
+  const lastNamePaterno = row.last_name_paterno ?? "";
+  const lastNameMaterno = row.last_name_materno ?? "";
+  const computed = [firstName, lastNamePaterno, lastNameMaterno].filter(Boolean).join(" ").trim();
   return {
     id: row.id,
-    nombre: row.nombre,
+    nombre: computed || row.nombre || "",
+    firstName,
+    lastNamePaterno,
+    lastNameMaterno,
     telefono: row.telefono ?? "",
     correo: row.correo ?? "",
     tipoPago: row.tipo_pago ?? "",
     observaciones: row.observaciones ?? "",
     fechaRegistro: row.fecha_registro,
+    birthDate: row.birth_date ?? null,
+    locality: row.locality ?? null,
+    guardianPatientId: row.guardian_patient_id ?? null,
+    guardianFirstName: row.guardian_first_name ?? null,
+    guardianLastNamePaterno: row.guardian_last_name_paterno ?? null,
+    guardianLastNameMaterno: row.guardian_last_name_materno ?? null,
     citas: appointments,
   };
 }
+
 
 /* ---------- doctor ---------- */
 
@@ -143,15 +157,31 @@ export async function upsertDoctor(input: {
 export async function uploadDoctorLogo(file: File): Promise<string> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("No autenticado");
-  const ext = file.name.split(".").pop() || "png";
-  const path = `${u.user.id}/logo-${Date.now()}.${ext}`;
+  const ext = (file.name.split(".").pop() || "png").toLowerCase();
+  // Stable path so upsert truly replaces the previous logo
+  const path = `${u.user.id}/logo.${ext}`;
+  // Remove any previous logo files (different extensions) so we don't leave stale ones
+  const { data: existing } = await supabase.storage
+    .from("doctor-logos")
+    .list(u.user.id);
+  const toRemove = (existing ?? [])
+    .filter((f) => f.name.startsWith("logo."))
+    .map((f) => `${u.user!.id}/${f.name}`);
+  if (toRemove.length > 0) {
+    await supabase.storage.from("doctor-logos").remove(toRemove);
+  }
   const { error } = await supabase.storage
     .from("doctor-logos")
-    .upload(path, file, { upsert: true });
+    .upload(path, file, { upsert: true, cacheControl: "0", contentType: file.type });
   if (error) throw error;
-  const { data } = await supabase.storage.from("doctor-logos").createSignedUrl(path, 60 * 60 * 24 * 365);
-  return data?.signedUrl ?? path;
+  const { data } = await supabase.storage
+    .from("doctor-logos")
+    .createSignedUrl(path, 60 * 60 * 24 * 365);
+  // Cache-bust so the <img> reloads
+  const url = data?.signedUrl ?? path;
+  return `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
 }
+
 
 /* ---------- branches ---------- */
 
@@ -164,6 +194,7 @@ function rowToBranch(r: any): Branch {
     city: r.city,
     phone: r.phone,
     isPrimary: r.is_primary,
+    roomCount: r.room_count ?? 1,
   };
 }
 
@@ -185,7 +216,8 @@ export async function createBranch(b: Omit<Branch, "id" | "doctorId">): Promise<
       city: b.city,
       phone: b.phone,
       is_primary: b.isPrimary,
-    })
+      room_count: b.roomCount ?? 1,
+    } as any)
     .select("*")
     .single();
   if (error) throw error;
@@ -201,7 +233,8 @@ export async function updateBranch(b: Branch): Promise<void> {
       city: b.city,
       phone: b.phone,
       is_primary: b.isPrimary,
-    })
+      room_count: b.roomCount ?? 1,
+    } as any)
     .eq("id", b.id);
   if (error) throw error;
 }
@@ -210,6 +243,48 @@ export async function deleteBranch(id: string): Promise<void> {
   const { error } = await supabase.from("branches").delete().eq("id", id);
   if (error) throw error;
 }
+
+/* ---------- branch rooms (consultorios) ---------- */
+
+export async function fetchBranchRooms(branchId?: string): Promise<import("@/lib/types").BranchRoom[]> {
+  let q = supabase.from("branch_rooms" as any).select("*").order("name");
+  if (branchId) q = q.eq("branch_id", branchId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    branchId: r.branch_id,
+    doctorId: r.doctor_id,
+    name: r.name,
+    assignedDoctorId: r.assigned_doctor_id ?? null,
+  }));
+}
+
+export async function createBranchRoom(input: { branchId: string; name: string; assignedDoctorId?: string | null }) {
+  const doctorId = await getCurrentDoctorId();
+  if (!doctorId) throw new Error("Crea tu perfil de doctor primero");
+  const { error } = await supabase.from("branch_rooms" as any).insert({
+    branch_id: input.branchId,
+    doctor_id: doctorId,
+    name: input.name,
+    assigned_doctor_id: input.assignedDoctorId ?? null,
+  } as any);
+  if (error) throw error;
+}
+
+export async function updateBranchRoom(id: string, input: { name?: string; assignedDoctorId?: string | null }) {
+  const patch: any = {};
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.assignedDoctorId !== undefined) patch.assigned_doctor_id = input.assignedDoctorId;
+  const { error } = await supabase.from("branch_rooms" as any).update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteBranchRoom(id: string) {
+  const { error } = await supabase.from("branch_rooms" as any).delete().eq("id", id);
+  if (error) throw error;
+}
+
 
 /* ---------- patients ---------- */
 
@@ -272,11 +347,20 @@ export async function createPatient(
     .insert({
       doctor_id: doctorId,
       nombre: data.nombre,
+      first_name: data.firstName,
+      last_name_paterno: data.lastNamePaterno,
+      last_name_materno: data.lastNameMaterno,
       telefono: data.telefono,
       correo: data.correo,
       tipo_pago: data.tipoPago,
       observaciones: data.observaciones,
       fecha_registro: data.fechaRegistro,
+      birth_date: data.birthDate ?? null,
+      locality: data.locality ?? null,
+      guardian_patient_id: data.guardianPatientId ?? null,
+      guardian_first_name: data.guardianFirstName ?? null,
+      guardian_last_name_paterno: data.guardianLastNamePaterno ?? null,
+      guardian_last_name_materno: data.guardianLastNameMaterno ?? null,
       created_by: user.user?.id ?? null,
     } as any)
     .select("*")
@@ -297,14 +381,24 @@ export async function updatePatient(patient: Patient): Promise<Patient> {
     .from("patients")
     .update({
       nombre: patient.nombre,
+      first_name: patient.firstName,
+      last_name_paterno: patient.lastNamePaterno,
+      last_name_materno: patient.lastNameMaterno,
       telefono: patient.telefono,
       correo: patient.correo,
       tipo_pago: patient.tipoPago,
       observaciones: patient.observaciones,
       fecha_registro: patient.fechaRegistro,
-    })
+      birth_date: patient.birthDate ?? null,
+      locality: patient.locality ?? null,
+      guardian_patient_id: patient.guardianPatientId ?? null,
+      guardian_first_name: patient.guardianFirstName ?? null,
+      guardian_last_name_paterno: patient.guardianLastNamePaterno ?? null,
+      guardian_last_name_materno: patient.guardianLastNameMaterno ?? null,
+    } as any)
     .eq("id", patient.id);
   if (error) throw error;
+
 
   const { data: existing } = await supabase
     .from("appointments")
