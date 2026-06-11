@@ -211,15 +211,14 @@ export function CitasView({ title }: { title: string }) {
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle>Seleccionar Paciente</CardTitle>
-              <CardDescription>Elige el paciente</CardDescription>
+              <CardDescription>Busca por nombre o teléfono, o elige de la lista</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-                <SelectTrigger><SelectValue placeholder="Selecciona un paciente" /></SelectTrigger>
-                <SelectContent>
-                  {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <PatientPicker
+                patients={patients}
+                value={selectedPatientId}
+                onChange={setSelectedPatientId}
+              />
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => { setIsDialogOpen(false); setSelectedPatientId(""); }}>Cancelar</Button>
                 <Button disabled={!selectedPatientId} onClick={() => { if (selectedPatientId) setEditingPatientId(selectedPatientId); }}>Continuar</Button>
@@ -228,6 +227,7 @@ export function CitasView({ title }: { title: string }) {
           </Card>
         </div>
       )}
+
 
       <AppointmentDialog
         open={isDialogOpen && (!!editingAppointment || !!editingPatientId)}
