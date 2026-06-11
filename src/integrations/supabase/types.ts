@@ -135,6 +135,58 @@ export type Database = {
           },
         ]
       }
+      branch_rooms: {
+        Row: {
+          assigned_doctor_id: string | null
+          branch_id: string
+          created_at: string
+          doctor_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_doctor_id?: string | null
+          branch_id: string
+          created_at?: string
+          doctor_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_doctor_id?: string | null
+          branch_id?: string
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_rooms_assigned_doctor_id_fkey"
+            columns: ["assigned_doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_rooms_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_rooms_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           address: string
@@ -145,6 +197,7 @@ export type Database = {
           is_primary: boolean
           name: string
           phone: string | null
+          room_count: number
           updated_at: string
         }
         Insert: {
@@ -156,6 +209,7 @@ export type Database = {
           is_primary?: boolean
           name: string
           phone?: string | null
+          room_count?: number
           updated_at?: string
         }
         Update: {
@@ -167,6 +221,7 @@ export type Database = {
           is_primary?: boolean
           name?: string
           phone?: string | null
+          room_count?: number
           updated_at?: string
         }
         Relationships: [
@@ -267,12 +322,21 @@ export type Database = {
       }
       patients: {
         Row: {
+          birth_date: string | null
           correo: string | null
           created_at: string
           created_by: string | null
           doctor_id: string | null
           fecha_registro: string
+          first_name: string | null
+          guardian_first_name: string | null
+          guardian_last_name_materno: string | null
+          guardian_last_name_paterno: string | null
+          guardian_patient_id: string | null
           id: string
+          last_name_materno: string | null
+          last_name_paterno: string | null
+          locality: string | null
           nombre: string
           observaciones: string | null
           telefono: string | null
@@ -280,12 +344,21 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          birth_date?: string | null
           correo?: string | null
           created_at?: string
           created_by?: string | null
           doctor_id?: string | null
           fecha_registro?: string
+          first_name?: string | null
+          guardian_first_name?: string | null
+          guardian_last_name_materno?: string | null
+          guardian_last_name_paterno?: string | null
+          guardian_patient_id?: string | null
           id?: string
+          last_name_materno?: string | null
+          last_name_paterno?: string | null
+          locality?: string | null
           nombre: string
           observaciones?: string | null
           telefono?: string | null
@@ -293,12 +366,21 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          birth_date?: string | null
           correo?: string | null
           created_at?: string
           created_by?: string | null
           doctor_id?: string | null
           fecha_registro?: string
+          first_name?: string | null
+          guardian_first_name?: string | null
+          guardian_last_name_materno?: string | null
+          guardian_last_name_paterno?: string | null
+          guardian_patient_id?: string | null
           id?: string
+          last_name_materno?: string | null
+          last_name_paterno?: string | null
+          locality?: string | null
           nombre?: string
           observaciones?: string | null
           telefono?: string | null
@@ -311,6 +393,13 @@ export type Database = {
             columns: ["doctor_id"]
             isOneToOne: false
             referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patients_guardian_patient_id_fkey"
+            columns: ["guardian_patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
         ]
