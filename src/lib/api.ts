@@ -302,11 +302,20 @@ export async function createPatient(
     .insert({
       doctor_id: doctorId,
       nombre: data.nombre,
+      first_name: data.firstName,
+      last_name_paterno: data.lastNamePaterno,
+      last_name_materno: data.lastNameMaterno,
       telefono: data.telefono,
       correo: data.correo,
       tipo_pago: data.tipoPago,
       observaciones: data.observaciones,
       fecha_registro: data.fechaRegistro,
+      birth_date: data.birthDate ?? null,
+      locality: data.locality ?? null,
+      guardian_patient_id: data.guardianPatientId ?? null,
+      guardian_first_name: data.guardianFirstName ?? null,
+      guardian_last_name_paterno: data.guardianLastNamePaterno ?? null,
+      guardian_last_name_materno: data.guardianLastNameMaterno ?? null,
       created_by: user.user?.id ?? null,
     } as any)
     .select("*")
@@ -327,14 +336,24 @@ export async function updatePatient(patient: Patient): Promise<Patient> {
     .from("patients")
     .update({
       nombre: patient.nombre,
+      first_name: patient.firstName,
+      last_name_paterno: patient.lastNamePaterno,
+      last_name_materno: patient.lastNameMaterno,
       telefono: patient.telefono,
       correo: patient.correo,
       tipo_pago: patient.tipoPago,
       observaciones: patient.observaciones,
       fecha_registro: patient.fechaRegistro,
-    })
+      birth_date: patient.birthDate ?? null,
+      locality: patient.locality ?? null,
+      guardian_patient_id: patient.guardianPatientId ?? null,
+      guardian_first_name: patient.guardianFirstName ?? null,
+      guardian_last_name_paterno: patient.guardianLastNamePaterno ?? null,
+      guardian_last_name_materno: patient.guardianLastNameMaterno ?? null,
+    } as any)
     .eq("id", patient.id);
   if (error) throw error;
+
 
   const { data: existing } = await supabase
     .from("appointments")
