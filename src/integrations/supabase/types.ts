@@ -234,6 +234,53 @@ export type Database = {
           },
         ]
       }
+      doctor_modules: {
+        Row: {
+          citas: boolean
+          created_at: string
+          doctor_id: string
+          google_calendar: boolean
+          inventario: boolean
+          monitor: boolean
+          pos: boolean
+          recordatorios: boolean
+          reportes: boolean
+          updated_at: string
+        }
+        Insert: {
+          citas?: boolean
+          created_at?: string
+          doctor_id: string
+          google_calendar?: boolean
+          inventario?: boolean
+          monitor?: boolean
+          pos?: boolean
+          recordatorios?: boolean
+          reportes?: boolean
+          updated_at?: string
+        }
+        Update: {
+          citas?: boolean
+          created_at?: string
+          doctor_id?: string
+          google_calendar?: boolean
+          inventario?: boolean
+          monitor?: boolean
+          pos?: boolean
+          recordatorios?: boolean
+          reportes?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_modules_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: true
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_oauth: {
         Row: {
           access_token: string | null
@@ -273,6 +320,38 @@ export type Database = {
             foreignKeyName: "doctor_oauth_doctor_id_fkey"
             columns: ["doctor_id"]
             isOneToOne: true
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_staff: {
+        Row: {
+          created_at: string
+          doctor_id: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_staff_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
             referencedRelation: "doctors"
             referencedColumns: ["id"]
           },
@@ -504,7 +583,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_doctor: { Args: { _doctor_id: string }; Returns: boolean }
       current_doctor_id: { Args: never; Returns: string }
+      current_staff_doctor_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
