@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, type Role } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
-import { fetchCurrentDoctor } from "@/lib/api";
+import { fetchCurrentDoctor, fetchCurrentDoctorModules, type DoctorModules } from "@/lib/api";
 import type { Doctor } from "@/lib/types";
 
 interface AppSidebarProps {
@@ -23,39 +23,50 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
   const { signOut } = useAuth();
   const isCollapsed = state === "collapsed";
   const [doctor, setDoctor] = useState<Doctor | null>(null);
+  const [modules, setModules] = useState<DoctorModules | null>(null);
 
   useEffect(() => {
     if (userRole === "doctor" || userRole === "admin") {
       fetchCurrentDoctor().then(setDoctor).catch(() => setDoctor(null));
     }
+    fetchCurrentDoctorModules().then(setModules).catch(() => setModules(null));
   }, [userRole]);
 
+  // Helper: only include module-gated items when the module is enabled (or modules not yet loaded for admin)
+  const mod = (key: keyof DoctorModules | null, enabled = true) => {
+    if (!enabled) return false;
+    if (!key) return true;
+    if (!modules) return userRole === "admin"; // admins see everything until modules load
+    return Boolean(modules[key]);
+  };
+
   const adminItems = [
-    { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-    { title: "Pacientes", url: "/admin/pacientes", icon: Users },
-    { title: "Citas", url: "/admin/citas", icon: CalendarDays },
-    { title: "Productos", url: "/admin/productos", icon: Activity },
-    { title: "Sucursales", url: "/admin/sucursales", icon: Building2 },
-    { title: "Estadísticas", url: "/admin/estadisticas", icon: BarChart3 },
-    { title: "Usuarios", url: "/admin/usuarios", icon: UsersRound },
-    { title: "Configuración", url: "/admin/configuracion", icon: Settings },
-  ];
+    { title: "Dashboard", url: "/admin", icon: LayoutDashboard, show: true },
+    { title: "Pacientes", url: "/admin/pacientes", icon: Users, show: true },
+    { title: "Citas", url: "/admin/citas", icon: CalendarDays, show: mod("citas") },
+    { title: "Productos", url: "/admin/productos", icon: Activity, show: true },
+    { title: "Sucursales", url: "/admin/sucursales", icon: Building2, show: true },
+    { title: "Estadísticas", url: "/admin/estadisticas", icon: BarChart3, show: mod("reportes") },
+    { title: "Usuarios", url: "/admin/usuarios", icon: UsersRound, show: true },
+    { title: "Configuración", url: "/admin/configuracion", icon: Settings, show: true },
+  ].filter((i) => i.show);
 
   const doctorItems = [
-    { title: "Dashboard", url: "/doctor", icon: LayoutDashboard },
-    { title: "Pacientes", url: "/doctor/pacientes", icon: Users },
-    { title: "Citas", url: "/doctor/citas", icon: CalendarDays },
-    { title: "Productos / Servicios", url: "/doctor/productos", icon: Activity },
-    { title: "Sucursales", url: "/doctor/sucursales", icon: Building2 },
-    { title: "Configuración", url: "/doctor/configuracion", icon: Settings },
-  ];
+    { title: "Dashboard", url: "/doctor", icon: LayoutDashboard, show: true },
+    { title: "Pacientes", url: "/doctor/pacientes", icon: Users, show: true },
+    { title: "Citas", url: "/doctor/citas", icon: CalendarDays, show: mod("citas") },
+    { title: "Productos / Servicios", url: "/doctor/productos", icon: Activity, show: true },
+    { title: "Sucursales", url: "/doctor/sucursales", icon: Building2, show: true },
+    { title: "Configuración", url: "/doctor/configuracion", icon: Settings, show: true },
+  ].filter((i) => i.show);
 
   const userItems = [
-    { title: "Mis Citas", url: "/mis-citas", icon: CalendarDays },
+    { title: "Mis Citas", url: "/mis-citas", icon: CalendarDays, show: true },
   ];
 
   const items =
     userRole === "admin" ? adminItems : userRole === "doctor" ? doctorItems : userItems;
+
 
   const handleLogout = async () => {
     await signOut();
