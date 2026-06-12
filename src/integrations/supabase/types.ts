@@ -515,7 +515,14 @@ export type Database = {
       is_doctor_owner: { Args: { _doctor_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "user" | "doctor"
+      app_role:
+        | "admin"
+        | "user"
+        | "doctor"
+        | "recepcion"
+        | "asistente"
+        | "monitor"
+        | "super_admin"
       appointment_status: "pendiente" | "completada" | "cancelada"
     }
     CompositeTypes: {
@@ -644,7 +651,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "doctor"],
+      app_role: [
+        "admin",
+        "user",
+        "doctor",
+        "recepcion",
+        "asistente",
+        "monitor",
+        "super_admin",
+      ],
       appointment_status: ["pendiente", "completada", "cancelada"],
     },
   },
