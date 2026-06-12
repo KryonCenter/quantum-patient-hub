@@ -540,3 +540,145 @@ export async function deleteProduct(id: string): Promise<void> {
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw error;
 }
+
+/* ---------- doctor modules ---------- */
+
+export type DoctorModuleKey =
+  | "citas"
+  | "pos"
+  | "inventario"
+  | "monitor"
+  | "recordatorios"
+  | "reportes"
+  | "google_calendar";
+
+export interface DoctorModules {
+  doctorId: string;
+  citas: boolean;
+  pos: boolean;
+  inventario: boolean;
+  monitor: boolean;
+  recordatorios: boolean;
+  reportes: boolean;
+  googleCalendar: boolean;
+}
+
+function rowToModules(r: any): DoctorModules {
+  return {
+    doctorId: r.doctor_id,
+    citas: !!r.citas,
+    pos: !!r.pos,
+    inventario: !!r.inventario,
+    monitor: !!r.monitor,
+    recordatorios: !!r.recordatorios,
+    reportes: !!r.reportes,
+    googleCalendar: !!r.google_calendar,
+  };
+}
+
+export async function fetchDoctorModules(doctorId: string): Promise<DoctorModules | null> {
+  const { data, error } = await supabase
+    .from("doctor_modules" as any)
+    .select("*")
+    .eq("doctor_id", doctorId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? rowToModules(data) : null;
+}
+
+export async function fetchCurrentDoctorModules(): Promise<DoctorModules | null> {
+  const doctorId = await getCurrentDoctorId();
+  if (doctorId) return fetchDoctorModules(doctorId);
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return null;
+  const { data: staff } = await supabase
+    .from("doctor_staff" as any)
+    .select("doctor_id")
+    .eq("user_id", u.user.id)
+    .maybeSingle();
+  const sid = (staff as any)?.doctor_id;
+  if (!sid) return null;
+  return fetchDoctorModules(sid);
+}
+
+export async function updateDoctorModules(
+  doctorId: string,
+  patch: Partial<Omit<DoctorModules, "doctorId">>,
+): Promise<void> {
+  const row: any = {};
+  if (patch.citas !== undefined) row.citas = patch.citas;
+  if (patch.pos !== undefined) row.pos = patch.pos;
+  if (patch.inventario !== undefined) row.inventario = patch.inventario;
+  if (patch.monitor !== undefined) row.monitor = patch.monitor;
+  if (patch.recordatorios !== undefined) row.recordatorios = patch.recordatorios;
+  if (patch.reportes !== undefined) row.reportes = patch.reportes;
+  if (patch.googleCalendar !== undefined) row.google_calendar = patch.googleCalendar;
+  const { error } = await supabase
+    .from("doctor_modules" as any)
+    .update(row)
+    .eq("doctor_id", doctorId);
+  if (error) throw error;
+}
+
+/* ---------- doctor staff ---------- */
+
+export type StaffRole = "recepcion" | "asistente" | "monitor";
+
+export interface DoctorStaff {
+  id: string;
+  doctorId: string;
+  userId: string;
+  role: StaffRole;
+  fullName?: string;
+  email?: string;
+}
+
+export async function fetchDoctorStaff(doctorId?: string): Promise<DoctorStaff[]> {
+  let q = supabase.from("doctor_staff" as any).select("*");
+  if (doctorId) q = q.eq("doctor_id", doctorId);
+  const { data, error } = await q;
+  if (error) throw error;
+  const rows = (data ?? []) as any[];
+  if (rows.length === 0) return [];
+  const userIds = rows.map((r) => r.user_id);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, email")
+    .in("id", userIds);
+  const pm = new Map((profiles ?? []).map((p) => [p.id, p]));
+  return rows.map((r) => ({
+    id: r.id,
+    doctorId: r.doctor_id,
+    userId: r.user_id,
+    role: r.role,
+    fullName: pm.get(r.user_id)?.full_name ?? "",
+    email: pm.get(r.user_id)?.email ?? "",
+  }));
+}
+
+export async function addDoctorStaff(input: { doctorId: string; userId: string; role: StaffRole }): Promise<void> {
+  const { error } = await supabase
+    .from("doctor_staff" as any)
+    .insert({ doctor_id: input.doctorId, user_id: input.userId, role: input.role } as any);
+  if (error) throw error;
+  await supabase
+    .from("user_roles")
+    .insert({ user_id: input.userId, role: input.role as any })
+    .then(() => {}, () => {});
+}
+
+export async function removeDoctorStaff(id: string, userId: string, role: StaffRole): Promise<void> {
+  const { error } = await supabase.from("doctor_staff" as any).delete().eq("id", id);
+  if (error) throw error;
+  await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as any);
+}
+
+export async function listAllDoctors(): Promise<{ id: string; displayName: string }[]> {
+  const { data, error } = await supabase
+    .from("doctors")
+    .select("id, display_name")
+    .order("display_name");
+  if (error) throw error;
+  return (data ?? []).map((d: any) => ({ id: d.id, displayName: d.display_name }));
+}
+

@@ -9,14 +9,16 @@ Esto es grande. Lo divido en bloques para implementarse en orden. Cada bloque de
 - Si edad < 18 → obligar tutor: nombres, apellidos, y buscador del tutor entre pacientes/usuarios; si no existe, alta rápida y vinculación (`guardian_patient_id`).
 - En el diálogo de cita: barra de búsqueda (nombre o teléfono) además del dropdown de paciente.
 
-## Bloque 2 — Módulos y roles configurables
+## Bloque 2 — Módulos y roles configurables ✅ (entregado)
 
 Nuevos roles: `recepcion`, `asistente`, `monitor`, `super_admin` (además de `admin`, `doctor`, `user`).
 
-- Tabla `doctor_modules` (citas, pos, inventario, monitor, recordatorios, reportes, google_calendar) con booleanos por doctor; gestionable por `super_admin`.
-- Tabla `doctor_staff` (usuarios ligados a un doctor con rol específico). El sidebar y rutas se filtran por módulos habilitados y rol.
-- Página "Gestión de usuarios" del super admin: cambiar rol de cualquier cuenta (paciente ↔ doctor ↔ recepción, etc.) y asignar staff a doctor.
-- Al alta de doctor: se crea automáticamente un usuario `monitor` por doctor (credenciales mostradas al admin/dr).
+- Tabla `doctor_modules` con interruptores por doctor (citas, pos, inventario, monitor, recordatorios, reportes, google_calendar) gestionable desde Admin → Usuarios.
+- Tabla `doctor_staff` que vincula usuarios a un doctor con rol `recepcion`/`asistente`/`monitor`.
+- Página "Gestión de Usuarios" amplia: cambiar rol primario de cualquier cuenta vía dropdown, panel por doctor con módulos + personal.
+- Sidebar oculta items según módulos deshabilitados.
+- Pendiente: rutas dedicadas para recepción/asistente/monitor (se hará en bloques siguientes).
+
 
 ## Bloque 3 — Punto de venta (POS)
 
