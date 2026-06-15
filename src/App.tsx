@@ -56,6 +56,7 @@ const App = () => (
 
             {/* Patient */}
             <Route path="/mis-citas" element={<ProtectedRoute><UserCitas /></ProtectedRoute>} />
+            <Route path="/solicitar-cita" element={<ProtectedRoute><PatientBooking /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
