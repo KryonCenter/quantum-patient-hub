@@ -56,6 +56,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
     { title: "Dashboard", url: "/doctor", icon: LayoutDashboard, show: true },
     { title: "Pacientes", url: "/doctor/pacientes", icon: Users, show: true },
     { title: "Citas", url: "/doctor/citas", icon: CalendarDays, show: mod("citas") },
+    { title: "Agenda", url: "/doctor/agenda", icon: CalendarClock, show: mod("citas") },
     { title: "Productos / Servicios", url: "/doctor/productos", icon: Activity, show: true },
     { title: "Sucursales", url: "/doctor/sucursales", icon: Building2, show: true },
     { title: "Configuración", url: "/doctor/configuracion", icon: Settings, show: true },
