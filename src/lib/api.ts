@@ -494,6 +494,193 @@ export async function deleteAppointment(id: string): Promise<void> {
 
 /* ---------- products ---------- */
 
+/* ---------- doctor schedules ---------- */
+
+export interface DoctorSchedule {
+  id: string;
+  doctorId: string;
+  branchId: string | null;
+  dayOfWeek: number; // 0=Sun..6=Sat
+  startTime: string; // "HH:MM"
+  endTime: string;
+  slotMinutes: number;
+  active: boolean;
+}
+
+function rowToSchedule(r: any): DoctorSchedule {
+  return {
+    id: r.id,
+    doctorId: r.doctor_id,
+    branchId: r.branch_id ?? null,
+    dayOfWeek: r.day_of_week,
+    startTime: String(r.start_time).slice(0, 5),
+    endTime: String(r.end_time).slice(0, 5),
+    slotMinutes: r.slot_minutes ?? 30,
+    active: !!r.active,
+  };
+}
+
+export async function fetchDoctorSchedules(doctorId?: string): Promise<DoctorSchedule[]> {
+  const id = doctorId ?? (await getCurrentDoctorId());
+  if (!id) return [];
+  const { data, error } = await supabase
+    .from("doctor_schedules" as any)
+    .select("*")
+    .eq("doctor_id", id)
+    .order("day_of_week");
+  if (error) throw error;
+  return (data ?? []).map(rowToSchedule);
+}
+
+export async function fetchPublicDoctorSchedules(doctorId: string): Promise<DoctorSchedule[]> {
+  const { data, error } = await supabase
+    .from("doctor_schedules" as any)
+    .select("*")
+    .eq("doctor_id", doctorId)
+    .eq("active", true)
+    .order("day_of_week");
+  if (error) throw error;
+  return (data ?? []).map(rowToSchedule);
+}
+
+export async function upsertDoctorSchedule(s: Omit<DoctorSchedule, "id" | "doctorId"> & { id?: string }): Promise<void> {
+  const doctorId = await getCurrentDoctorId();
+  if (!doctorId) throw new Error("Crea tu perfil de doctor primero");
+  const payload: any = {
+    doctor_id: doctorId,
+    branch_id: s.branchId ?? null,
+    day_of_week: s.dayOfWeek,
+    start_time: s.startTime,
+    end_time: s.endTime,
+    slot_minutes: s.slotMinutes,
+    active: s.active,
+  };
+  if (s.id) {
+    const { error } = await supabase.from("doctor_schedules" as any).update(payload).eq("id", s.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from("doctor_schedules" as any).insert(payload);
+    if (error) throw error;
+  }
+}
+
+export async function deleteDoctorSchedule(id: string): Promise<void> {
+  const { error } = await supabase.from("doctor_schedules" as any).delete().eq("id", id);
+  if (error) throw error;
+}
+
+/**
+ * Compute available time slots for a doctor on a specific date.
+ * Returns "HH:MM" strings.
+ */
+export async function fetchAvailableSlots(input: {
+  doctorId: string;
+  date: string; // YYYY-MM-DD
+  branchId?: string | null;
+}): Promise<string[]> {
+  const d = new Date(input.date + "T00:00:00");
+  const dow = d.getDay();
+  const schedules = await fetchPublicDoctorSchedules(input.doctorId);
+  const matching = schedules.filter(
+    (s) => s.dayOfWeek === dow && (!input.branchId || !s.branchId || s.branchId === input.branchId),
+  );
+  if (matching.length === 0) return [];
+
+  // Pull existing appointments to subtract taken slots
+  const { data: taken } = await supabase
+    .from("appointments")
+    .select("hora, branch_id")
+    .eq("doctor_id", input.doctorId)
+    .eq("fecha", input.date)
+    .neq("estado", "cancelada");
+  const takenSet = new Set(
+    (taken ?? [])
+      .filter((t: any) => !input.branchId || !t.branch_id || t.branch_id === input.branchId)
+      .map((t: any) => String(t.hora).slice(0, 5)),
+  );
+
+  const slots: string[] = [];
+  for (const sch of matching) {
+    const [sh, sm] = sch.startTime.split(":").map(Number);
+    const [eh, em] = sch.endTime.split(":").map(Number);
+    let cur = sh * 60 + sm;
+    const end = eh * 60 + em;
+    while (cur + sch.slotMinutes <= end) {
+      const hh = String(Math.floor(cur / 60)).padStart(2, "0");
+      const mm = String(cur % 60).padStart(2, "0");
+      const t = `${hh}:${mm}`;
+      if (!takenSet.has(t)) slots.push(t);
+      cur += sch.slotMinutes;
+    }
+  }
+  return Array.from(new Set(slots)).sort();
+}
+
+export async function listPublicDoctors(): Promise<{ id: string; displayName: string; specialty: string | null; logoUrl: string | null; brandColor: string }[]> {
+  const { data, error } = await supabase
+    .from("doctors")
+    .select("id, display_name, specialty, logo_url, brand_color")
+    .order("display_name");
+  if (error) throw error;
+  return (data ?? []).map((d: any) => ({
+    id: d.id,
+    displayName: d.display_name,
+    specialty: d.specialty ?? null,
+    logoUrl: d.logo_url ?? null,
+    brandColor: d.brand_color ?? "#10b981",
+  }));
+}
+
+export async function requestAppointmentByPatient(input: {
+  doctorId: string;
+  branchId?: string | null;
+  fecha: string;
+  hora: string;
+  motivo: string;
+  patientId?: string | null;
+}): Promise<string> {
+  const { data: u } = await supabase.auth.getUser();
+  let patientId = input.patientId ?? null;
+  if (!patientId && u.user) {
+    // Try to find a patient record for this user
+    const { data: existing } = await supabase
+      .from("patients")
+      .select("id")
+      .eq("doctor_id", input.doctorId)
+      .eq("correo", u.user.email ?? "")
+      .maybeSingle();
+    if (existing) patientId = (existing as any).id;
+  }
+  if (!patientId) throw new Error("No se encontró ficha de paciente; pídele al doctor que te registre o crea una solicitud.");
+
+  const { data, error } = await supabase
+    .from("appointments")
+    .insert({
+      doctor_id: input.doctorId,
+      patient_id: patientId,
+      fecha: input.fecha,
+      hora: input.hora,
+      motivo: input.motivo,
+      estado: "pendiente",
+      branch_id: input.branchId ?? null,
+      requested_by_patient: true,
+      confirmation_status: "pending",
+      created_by: u.user?.id ?? null,
+    } as any)
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function setAppointmentConfirmation(id: string, status: "confirmed" | "rejected"): Promise<void> {
+  const { error } = await supabase
+    .from("appointments")
+    .update({ confirmation_status: status, estado: status === "rejected" ? "cancelada" : "pendiente" } as any)
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function fetchProducts(): Promise<Product[]> {
   const { data, error } = await supabase
     .from("products")

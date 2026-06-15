@@ -16,7 +16,9 @@ import AdminCitas from "./pages/AdminCitas";
 import DoctorDashboard from "./pages/UserDashboardNew";
 import DoctorBranches from "./pages/DoctorBranches";
 import DoctorConfig from "./pages/DoctorConfig";
+import DoctorAgenda from "./pages/DoctorAgenda";
 import UserCitas from "./pages/UserCitas";
+import PatientBooking from "./pages/PatientBooking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,9 +51,12 @@ const App = () => (
             <Route path="/doctor/productos" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><AdminProductos /></ProtectedRoute>} />
             <Route path="/doctor/sucursales" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorBranches /></ProtectedRoute>} />
             <Route path="/doctor/configuracion" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorConfig /></ProtectedRoute>} />
+            <Route path="/doctor/agenda" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorAgenda /></ProtectedRoute>} />
+            <Route path="/admin/agenda" element={<ProtectedRoute requireAdmin><DoctorAgenda /></ProtectedRoute>} />
 
             {/* Patient */}
             <Route path="/mis-citas" element={<ProtectedRoute><UserCitas /></ProtectedRoute>} />
+            <Route path="/solicitar-cita" element={<ProtectedRoute><PatientBooking /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
