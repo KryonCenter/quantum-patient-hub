@@ -23,6 +23,7 @@ const AdminProductos = () => {
   const [newProduct, setNewProduct] = useState({
     nombre: "", precio: "", stock: "", descripcion: "",
     kind: "service" as ProductKind,
+    trackInventory: false, minStock: "0",
   });
 
   const load = async () => {
