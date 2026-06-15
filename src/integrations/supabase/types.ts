@@ -62,6 +62,7 @@ export type Database = {
       appointments: {
         Row: {
           branch_id: string | null
+          confirmation_status: string
           created_at: string
           created_by: string | null
           diagnostico: string | null
@@ -73,12 +74,15 @@ export type Database = {
           motivo: string | null
           observaciones: string | null
           patient_id: string
+          requested_by_patient: boolean
+          room_id: string | null
           sintomas: string | null
           tratamiento: string | null
           updated_at: string
         }
         Insert: {
           branch_id?: string | null
+          confirmation_status?: string
           created_at?: string
           created_by?: string | null
           diagnostico?: string | null
@@ -90,12 +94,15 @@ export type Database = {
           motivo?: string | null
           observaciones?: string | null
           patient_id: string
+          requested_by_patient?: boolean
+          room_id?: string | null
           sintomas?: string | null
           tratamiento?: string | null
           updated_at?: string
         }
         Update: {
           branch_id?: string | null
+          confirmation_status?: string
           created_at?: string
           created_by?: string | null
           diagnostico?: string | null
@@ -107,6 +114,8 @@ export type Database = {
           motivo?: string | null
           observaciones?: string | null
           patient_id?: string
+          requested_by_patient?: boolean
+          room_id?: string | null
           sintomas?: string | null
           tratamiento?: string | null
           updated_at?: string
@@ -131,6 +140,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "branch_rooms"
             referencedColumns: ["id"]
           },
         ]
@@ -325,6 +341,60 @@ export type Database = {
           },
         ]
       }
+      doctor_schedules: {
+        Row: {
+          active: boolean
+          branch_id: string | null
+          created_at: string
+          day_of_week: number
+          doctor_id: string
+          end_time: string
+          id: string
+          slot_minutes: number
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          branch_id?: string | null
+          created_at?: string
+          day_of_week: number
+          doctor_id: string
+          end_time: string
+          id?: string
+          slot_minutes?: number
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          branch_id?: string | null
+          created_at?: string
+          day_of_week?: number
+          doctor_id?: string
+          end_time?: string
+          id?: string
+          slot_minutes?: number
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_schedules_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_schedules_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_staff: {
         Row: {
           created_at: string
@@ -418,6 +488,7 @@ export type Database = {
           locality: string | null
           nombre: string
           observaciones: string | null
+          pending_validation: boolean
           telefono: string | null
           tipo_pago: string | null
           updated_at: string
@@ -440,6 +511,7 @@ export type Database = {
           locality?: string | null
           nombre: string
           observaciones?: string | null
+          pending_validation?: boolean
           telefono?: string | null
           tipo_pago?: string | null
           updated_at?: string
@@ -462,6 +534,7 @@ export type Database = {
           locality?: string | null
           nombre?: string
           observaciones?: string | null
+          pending_validation?: boolean
           telefono?: string | null
           tipo_pago?: string | null
           updated_at?: string
