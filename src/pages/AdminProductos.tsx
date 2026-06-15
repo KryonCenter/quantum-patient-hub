@@ -44,9 +44,11 @@ const AdminProductos = () => {
         precio: parseFloat(newProduct.precio) || 0,
         stock: newProduct.kind === "service" ? 0 : (parseInt(newProduct.stock) || 0),
         kind: newProduct.kind,
+        trackInventory: newProduct.kind === "physical" ? newProduct.trackInventory : false,
+        minStock: parseInt(newProduct.minStock) || 0,
       });
       setIsDialogOpen(false);
-      setNewProduct({ nombre: "", precio: "", stock: "", descripcion: "", kind: "service" });
+      setNewProduct({ nombre: "", precio: "", stock: "", descripcion: "", kind: "service", trackInventory: false, minStock: "0" });
       toast({ title: "Agregado" });
       await load();
     } catch (e: any) {
