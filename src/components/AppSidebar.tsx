@@ -1,4 +1,4 @@
-import { Activity, LayoutDashboard, Users, BarChart3, UsersRound, Settings, Shield, LogOut, CalendarDays, Building2, Stethoscope } from "lucide-react";
+import { Activity, LayoutDashboard, Users, BarChart3, UsersRound, Settings, Shield, LogOut, CalendarDays, Building2, Stethoscope, CalendarClock } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
