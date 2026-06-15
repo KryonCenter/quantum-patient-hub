@@ -46,6 +46,8 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
     { title: "Citas", url: "/admin/citas", icon: CalendarDays, show: mod("citas") },
     { title: "Agenda", url: "/admin/agenda", icon: CalendarClock, show: mod("citas") },
     { title: "Productos", url: "/admin/productos", icon: Activity, show: true },
+    { title: "Punto de Venta", url: "/admin/pos", icon: DollarSign, show: mod("pos") },
+    { title: "Inventario", url: "/admin/inventario", icon: Package, show: mod("inventario") },
     { title: "Sucursales", url: "/admin/sucursales", icon: Building2, show: true },
     { title: "Estadísticas", url: "/admin/estadisticas", icon: BarChart3, show: mod("reportes") },
     { title: "Usuarios", url: "/admin/usuarios", icon: UsersRound, show: true },
