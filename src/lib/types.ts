@@ -83,6 +83,54 @@ export interface Product {
   precio: number;
   stock: number;
   kind: ProductKind;
+  minStock?: number;
+  trackInventory?: boolean;
+}
+
+export type PaymentMethod = "efectivo" | "transferencia" | "tarjeta";
+
+export interface SaleItem {
+  id?: string;
+  productId?: string | null;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  subtotal: number;
+  isService: boolean;
+}
+
+export interface SalePayment {
+  id?: string;
+  method: PaymentMethod;
+  amount: number;
+  reference?: string | null;
+}
+
+export interface Sale {
+  id: string;
+  doctorId: string;
+  branchId?: string | null;
+  patientId?: string | null;
+  appointmentId?: string | null;
+  total: number;
+  paid: number;
+  status: "open" | "paid" | "cancelled";
+  notes?: string | null;
+  createdAt?: string;
+  items: SaleItem[];
+  payments: SalePayment[];
+}
+
+export interface InventoryMovement {
+  id: string;
+  doctorId: string;
+  productId: string;
+  productName?: string;
+  qty: number;
+  type: "entrada" | "salida" | "ajuste";
+  reason?: string | null;
+  saleId?: string | null;
+  createdAt: string;
 }
 
 export interface Doctor {

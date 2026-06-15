@@ -19,6 +19,8 @@ import DoctorConfig from "./pages/DoctorConfig";
 import DoctorAgenda from "./pages/DoctorAgenda";
 import UserCitas from "./pages/UserCitas";
 import PatientBooking from "./pages/PatientBooking";
+import DoctorPOS from "./pages/DoctorPOS";
+import DoctorInventario from "./pages/DoctorInventario";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,7 +54,11 @@ const App = () => (
             <Route path="/doctor/sucursales" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorBranches /></ProtectedRoute>} />
             <Route path="/doctor/configuracion" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorConfig /></ProtectedRoute>} />
             <Route path="/doctor/agenda" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorAgenda /></ProtectedRoute>} />
+            <Route path="/doctor/pos" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorPOS /></ProtectedRoute>} />
+            <Route path="/doctor/inventario" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorInventario /></ProtectedRoute>} />
             <Route path="/admin/agenda" element={<ProtectedRoute requireAdmin><DoctorAgenda /></ProtectedRoute>} />
+            <Route path="/admin/pos" element={<ProtectedRoute requireAdmin><DoctorPOS /></ProtectedRoute>} />
+            <Route path="/admin/inventario" element={<ProtectedRoute requireAdmin><DoctorInventario /></ProtectedRoute>} />
 
             {/* Patient */}
             <Route path="/mis-citas" element={<ProtectedRoute><UserCitas /></ProtectedRoute>} />

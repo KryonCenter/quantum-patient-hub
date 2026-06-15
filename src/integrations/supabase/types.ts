@@ -469,6 +469,64 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          doctor_id: string
+          id: string
+          product_id: string
+          qty: number
+          reason: string | null
+          sale_id: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          doctor_id: string
+          id?: string
+          product_id: string
+          qty: number
+          reason?: string | null
+          sale_id?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          doctor_id?: string
+          id?: string
+          product_id?: string
+          qty?: number
+          reason?: string | null
+          sale_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birth_date: string | null
@@ -564,9 +622,11 @@ export type Database = {
           doctor_id: string | null
           id: string
           kind: string
+          min_stock: number
           nombre: string
           precio: number
           stock: number
+          track_inventory: boolean
           updated_at: string
         }
         Insert: {
@@ -576,9 +636,11 @@ export type Database = {
           doctor_id?: string | null
           id?: string
           kind?: string
+          min_stock?: number
           nombre: string
           precio?: number
           stock?: number
+          track_inventory?: boolean
           updated_at?: string
         }
         Update: {
@@ -588,9 +650,11 @@ export type Database = {
           doctor_id?: string | null
           id?: string
           kind?: string
+          min_stock?: number
           nombre?: string
           precio?: number
           stock?: number
+          track_inventory?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -629,6 +693,166 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sale_items: {
+        Row: {
+          created_at: string
+          id: string
+          is_service: boolean
+          name: string
+          product_id: string | null
+          quantity: number
+          sale_id: string
+          subtotal: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_service?: boolean
+          name: string
+          product_id?: string | null
+          quantity?: number
+          sale_id: string
+          subtotal?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_service?: boolean
+          name?: string
+          product_id?: string | null
+          quantity?: number
+          sale_id?: string
+          subtotal?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          reference: string | null
+          sale_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method: string
+          reference?: string | null
+          sale_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          reference?: string | null
+          sale_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_payments_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          appointment_id: string | null
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          doctor_id: string
+          id: string
+          notes: string | null
+          paid: number
+          patient_id: string | null
+          status: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          doctor_id: string
+          id?: string
+          notes?: string | null
+          paid?: number
+          patient_id?: string | null
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          doctor_id?: string
+          id?: string
+          notes?: string | null
+          paid?: number
+          patient_id?: string | null
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

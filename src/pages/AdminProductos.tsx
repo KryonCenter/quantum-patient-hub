@@ -23,6 +23,7 @@ const AdminProductos = () => {
   const [newProduct, setNewProduct] = useState({
     nombre: "", precio: "", stock: "", descripcion: "",
     kind: "service" as ProductKind,
+    trackInventory: false, minStock: "0",
   });
 
   const load = async () => {
@@ -43,9 +44,11 @@ const AdminProductos = () => {
         precio: parseFloat(newProduct.precio) || 0,
         stock: newProduct.kind === "service" ? 0 : (parseInt(newProduct.stock) || 0),
         kind: newProduct.kind,
+        trackInventory: newProduct.kind === "physical" ? newProduct.trackInventory : false,
+        minStock: parseInt(newProduct.minStock) || 0,
       });
       setIsDialogOpen(false);
-      setNewProduct({ nombre: "", precio: "", stock: "", descripcion: "", kind: "service" });
+      setNewProduct({ nombre: "", precio: "", stock: "", descripcion: "", kind: "service", trackInventory: false, minStock: "0" });
       toast({ title: "Agregado" });
       await load();
     } catch (e: any) {
@@ -101,8 +104,23 @@ const AdminProductos = () => {
                 <div><Label>Precio</Label>
                   <Input type="number" value={newProduct.precio} onChange={(e) => setNewProduct({ ...newProduct, precio: e.target.value })} /></div>
                 {newProduct.kind === "physical" && (
-                  <div><Label>Stock</Label>
-                    <Input type="number" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} /></div>
+                  <>
+                    <div><Label>Stock inicial</Label>
+                      <Input type="number" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} /></div>
+                    <div className="flex items-center justify-between rounded-md border p-3">
+                      <div>
+                        <Label>Controlar inventario</Label>
+                        <p className="text-xs text-muted-foreground">Descuenta stock al vender y avisa cuando esté bajo</p>
+                      </div>
+                      <input type="checkbox" checked={newProduct.trackInventory}
+                        onChange={(e) => setNewProduct({ ...newProduct, trackInventory: e.target.checked })}
+                        className="h-4 w-4" />
+                    </div>
+                    {newProduct.trackInventory && (
+                      <div><Label>Stock mínimo</Label>
+                        <Input type="number" value={newProduct.minStock} onChange={(e) => setNewProduct({ ...newProduct, minStock: e.target.value })} /></div>
+                    )}
+                  </>
                 )}
                 <div><Label>Descripción</Label>
                   <Textarea value={newProduct.descripcion} onChange={(e) => setNewProduct({ ...newProduct, descripcion: e.target.value })} /></div>

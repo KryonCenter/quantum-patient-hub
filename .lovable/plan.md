@@ -20,7 +20,7 @@ Nuevos roles: `recepcion`, `asistente`, `monitor`, `super_admin` (además de `ad
 - Pendiente: rutas dedicadas para recepción/asistente/monitor (se hará en bloques siguientes).
 
 
-## Bloque 3 — Punto de venta (POS)
+## Bloque 3 — Punto de venta (POS) ✅ (entregado)
 
 - Tabla `sales` (doctor_id, branch_id, patient_id, appointment_id, total, status, created_by) + `sale_items` (product_id o servicio libre, qty, unit_price editable, subtotal) + `sale_payments` (method: `efectivo` | `transferencia` | `tarjeta`, amount, reference para transferencia/tarjeta).
 - Pantalla "Cobro" precarga los productos/servicios de la cita; el doctor puede:
@@ -72,7 +72,7 @@ Nuevos roles: `recepcion`, `asistente`, `monitor`, `super_admin` (además de `ad
 - Extender `branches` con `room_count`.
 - Tabla `branch_rooms` con `name` ("Consultorio 1") y asignación de doctor responsable.
 
-## Bloque 10 — Inventario
+## Bloque 10 — Inventario ✅ (entregado)
 
 - Extender `products` con `stock`, `min_stock`, `track_inventory` (bool).
 - Tabla `inventory_movements` (product_id, qty, type: `entrada`|`salida`|`ajuste`, reason, sale_id?).
