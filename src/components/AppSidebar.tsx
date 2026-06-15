@@ -64,6 +64,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
 
   const userItems = [
     { title: "Mis Citas", url: "/mis-citas", icon: CalendarDays, show: true },
+    { title: "Solicitar Cita", url: "/solicitar-cita", icon: CalendarClock, show: true },
   ];
 
   const items =
