@@ -81,7 +81,7 @@ export default function DoctorAgenda() {
   };
 
   return (
-    <DashboardLayout userRole={profile?.role ?? "doctor"} userName={profile?.full_name ?? "Doctor"}>
+    <DashboardLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
