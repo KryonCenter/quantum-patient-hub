@@ -21,7 +21,7 @@ import type { Branch } from "@/lib/types";
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 export default function DoctorAgenda() {
-  const { profile } = useAuth();
+  useAuth();
   const { toast } = useToast();
   const [schedules, setSchedules] = useState<DoctorSchedule[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
