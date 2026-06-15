@@ -18,6 +18,7 @@ import DoctorBranches from "./pages/DoctorBranches";
 import DoctorConfig from "./pages/DoctorConfig";
 import DoctorAgenda from "./pages/DoctorAgenda";
 import UserCitas from "./pages/UserCitas";
+import PatientBooking from "./pages/PatientBooking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
