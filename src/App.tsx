@@ -16,6 +16,7 @@ import AdminCitas from "./pages/AdminCitas";
 import DoctorDashboard from "./pages/UserDashboardNew";
 import DoctorBranches from "./pages/DoctorBranches";
 import DoctorConfig from "./pages/DoctorConfig";
+import DoctorAgenda from "./pages/DoctorAgenda";
 import UserCitas from "./pages/UserCitas";
 import NotFound from "./pages/NotFound";
 
