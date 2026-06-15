@@ -60,6 +60,8 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
     { title: "Citas", url: "/doctor/citas", icon: CalendarDays, show: mod("citas") },
     { title: "Agenda", url: "/doctor/agenda", icon: CalendarClock, show: mod("citas") },
     { title: "Productos / Servicios", url: "/doctor/productos", icon: Activity, show: true },
+    { title: "Punto de Venta", url: "/doctor/pos", icon: DollarSign, show: mod("pos") },
+    { title: "Inventario", url: "/doctor/inventario", icon: Package, show: mod("inventario") },
     { title: "Sucursales", url: "/doctor/sucursales", icon: Building2, show: true },
     { title: "Configuración", url: "/doctor/configuracion", icon: Settings, show: true },
   ].filter((i) => i.show);
