@@ -694,6 +694,8 @@ export async function fetchProducts(): Promise<Product[]> {
     precio: Number(r.precio),
     stock: r.stock,
     kind: (r.kind as ProductKind) ?? "service",
+    minStock: r.min_stock ?? 0,
+    trackInventory: !!r.track_inventory,
   }));
 }
 
@@ -709,6 +711,8 @@ export async function createProduct(p: Omit<Product, "id">): Promise<Product> {
       precio: p.precio,
       stock: p.stock,
       kind: p.kind,
+      min_stock: p.minStock ?? 0,
+      track_inventory: p.trackInventory ?? false,
     } as any)
     .select("*")
     .single();
@@ -720,13 +724,282 @@ export async function createProduct(p: Omit<Product, "id">): Promise<Product> {
     precio: Number(data.precio),
     stock: data.stock,
     kind: ((data as any).kind as ProductKind) ?? "service",
+    minStock: (data as any).min_stock ?? 0,
+    trackInventory: !!(data as any).track_inventory,
   };
+}
+
+export async function updateProduct(id: string, p: Partial<Product>): Promise<void> {
+  const row: any = {};
+  if (p.nombre !== undefined) row.nombre = p.nombre;
+  if (p.descripcion !== undefined) row.descripcion = p.descripcion;
+  if (p.precio !== undefined) row.precio = p.precio;
+  if (p.stock !== undefined) row.stock = p.stock;
+  if (p.kind !== undefined) row.kind = p.kind;
+  if (p.minStock !== undefined) row.min_stock = p.minStock;
+  if (p.trackInventory !== undefined) row.track_inventory = p.trackInventory;
+  const { error } = await supabase.from("products").update(row).eq("id", id);
+  if (error) throw error;
 }
 
 export async function deleteProduct(id: string): Promise<void> {
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw error;
 }
+
+/* ---------- POS: sales ---------- */
+
+import type { Sale, SaleItem, SalePayment, InventoryMovement } from "@/lib/types";
+
+export async function createSaleFromAppointment(appointmentId: string): Promise<string> {
+  const doctorId = await getCurrentDoctorId();
+  if (!doctorId) throw new Error("No doctor");
+
+  // Already exists?
+  const { data: existing } = await supabase
+    .from("sales" as any)
+    .select("id")
+    .eq("appointment_id", appointmentId)
+    .maybeSingle();
+  if (existing) return (existing as any).id;
+
+  const { data: appt, error: aErr } = await supabase
+    .from("appointments")
+    .select("id, patient_id, branch_id, doctor_id")
+    .eq("id", appointmentId)
+    .single();
+  if (aErr) throw aErr;
+
+  const { data: prods } = await supabase
+    .from("appointment_products")
+    .select("*")
+    .eq("appointment_id", appointmentId);
+
+  const items = (prods ?? []) as any[];
+  const total = items.reduce((s, p) => s + Number(p.precio) * Number(p.cantidad), 0);
+
+  const { data: user } = await supabase.auth.getUser();
+  const { data: sale, error: sErr } = await supabase
+    .from("sales" as any)
+    .insert({
+      doctor_id: doctorId,
+      branch_id: appt.branch_id ?? null,
+      patient_id: appt.patient_id ?? null,
+      appointment_id: appointmentId,
+      total,
+      status: "open",
+      created_by: user.user?.id ?? null,
+    } as any)
+    .select("id")
+    .single();
+  if (sErr) throw sErr;
+  const saleId = (sale as any).id;
+
+  if (items.length > 0) {
+    const rows = items.map((p) => ({
+      sale_id: saleId,
+      product_id: p.product_id ?? null,
+      name: p.nombre,
+      unit_price: Number(p.precio),
+      quantity: Number(p.cantidad),
+      subtotal: Number(p.precio) * Number(p.cantidad),
+      is_service: false,
+    }));
+    await supabase.from("sale_items" as any).insert(rows as any);
+  }
+  return saleId;
+}
+
+function mapSale(row: any, items: any[], payments: any[]): Sale {
+  return {
+    id: row.id,
+    doctorId: row.doctor_id,
+    branchId: row.branch_id,
+    patientId: row.patient_id,
+    appointmentId: row.appointment_id,
+    total: Number(row.total),
+    paid: Number(row.paid),
+    status: row.status,
+    notes: row.notes,
+    createdAt: row.created_at,
+    items: items.map((i) => ({
+      id: i.id,
+      productId: i.product_id,
+      name: i.name,
+      unitPrice: Number(i.unit_price),
+      quantity: Number(i.quantity),
+      subtotal: Number(i.subtotal),
+      isService: !!i.is_service,
+    })),
+    payments: payments.map((p) => ({
+      id: p.id,
+      method: p.method,
+      amount: Number(p.amount),
+      reference: p.reference,
+    })),
+  };
+}
+
+export async function fetchSale(saleId: string): Promise<Sale | null> {
+  const { data: row, error } = await supabase.from("sales" as any).select("*").eq("id", saleId).maybeSingle();
+  if (error) throw error;
+  if (!row) return null;
+  const [{ data: items }, { data: payments }] = await Promise.all([
+    supabase.from("sale_items" as any).select("*").eq("sale_id", saleId),
+    supabase.from("sale_payments" as any).select("*").eq("sale_id", saleId),
+  ]);
+  return mapSale(row, (items ?? []) as any[], (payments ?? []) as any[]);
+}
+
+export async function fetchSales(filters?: { status?: string; from?: string; to?: string }): Promise<Sale[]> {
+  let q = supabase.from("sales" as any).select("*").order("created_at", { ascending: false });
+  if (filters?.status) q = q.eq("status", filters.status);
+  if (filters?.from) q = q.gte("created_at", filters.from);
+  if (filters?.to) q = q.lte("created_at", filters.to);
+  const { data, error } = await q;
+  if (error) throw error;
+  const rows = (data ?? []) as any[];
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+  const [{ data: items }, { data: payments }] = await Promise.all([
+    supabase.from("sale_items" as any).select("*").in("sale_id", ids),
+    supabase.from("sale_payments" as any).select("*").in("sale_id", ids),
+  ]);
+  const itemsBy = new Map<string, any[]>();
+  for (const i of (items ?? []) as any[]) {
+    const arr = itemsBy.get(i.sale_id) ?? []; arr.push(i); itemsBy.set(i.sale_id, arr);
+  }
+  const paysBy = new Map<string, any[]>();
+  for (const p of (payments ?? []) as any[]) {
+    const arr = paysBy.get(p.sale_id) ?? []; arr.push(p); paysBy.set(p.sale_id, arr);
+  }
+  return rows.map((r) => mapSale(r, itemsBy.get(r.id) ?? [], paysBy.get(r.id) ?? []));
+}
+
+export async function updateSaleItems(saleId: string, items: SaleItem[]): Promise<void> {
+  await supabase.from("sale_items" as any).delete().eq("sale_id", saleId);
+  if (items.length > 0) {
+    const rows = items.map((i) => ({
+      sale_id: saleId,
+      product_id: i.productId ?? null,
+      name: i.name,
+      unit_price: i.unitPrice,
+      quantity: i.quantity,
+      subtotal: i.unitPrice * i.quantity,
+      is_service: i.isService,
+    }));
+    const { error } = await supabase.from("sale_items" as any).insert(rows as any);
+    if (error) throw error;
+  }
+  const total = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  await supabase.from("sales" as any).update({ total } as any).eq("id", saleId);
+}
+
+export async function closeSale(saleId: string, payments: SalePayment[]): Promise<void> {
+  await supabase.from("sale_payments" as any).delete().eq("sale_id", saleId);
+  if (payments.length > 0) {
+    const rows = payments.map((p) => ({
+      sale_id: saleId,
+      method: p.method,
+      amount: p.amount,
+      reference: p.reference ?? null,
+    }));
+    const { error } = await supabase.from("sale_payments" as any).insert(rows as any);
+    if (error) throw error;
+  }
+  const paid = payments.reduce((s, p) => s + p.amount, 0);
+
+  // Discount stock for tracked physical products
+  const { data: items } = await supabase.from("sale_items" as any).select("*").eq("sale_id", saleId);
+  const doctorId = await getCurrentDoctorId();
+  for (const it of (items ?? []) as any[]) {
+    if (!it.product_id) continue;
+    const { data: prod } = await supabase
+      .from("products")
+      .select("id, kind, stock, track_inventory")
+      .eq("id", it.product_id)
+      .maybeSingle();
+    if (!prod) continue;
+    if ((prod as any).kind === "physical" && (prod as any).track_inventory) {
+      const newStock = Number((prod as any).stock) - Number(it.quantity);
+      await supabase.from("products").update({ stock: newStock } as any).eq("id", it.product_id);
+      if (doctorId) {
+        await supabase.from("inventory_movements" as any).insert({
+          doctor_id: doctorId,
+          product_id: it.product_id,
+          qty: Number(it.quantity),
+          type: "salida",
+          reason: "Venta",
+          sale_id: saleId,
+        } as any);
+      }
+    }
+  }
+
+  await supabase.from("sales" as any).update({ paid, status: "paid" } as any).eq("id", saleId);
+}
+
+export async function cancelSale(saleId: string): Promise<void> {
+  await supabase.from("sales" as any).update({ status: "cancelled" } as any).eq("id", saleId);
+}
+
+/* ---------- Inventory ---------- */
+
+export async function fetchInventoryMovements(productId?: string): Promise<InventoryMovement[]> {
+  let q = supabase.from("inventory_movements" as any).select("*").order("created_at", { ascending: false }).limit(200);
+  if (productId) q = q.eq("product_id", productId);
+  const { data, error } = await q;
+  if (error) throw error;
+  const rows = (data ?? []) as any[];
+  if (rows.length === 0) return [];
+  const productIds = [...new Set(rows.map((r) => r.product_id))];
+  const { data: prods } = await supabase.from("products").select("id, nombre").in("id", productIds);
+  const pm = new Map((prods ?? []).map((p: any) => [p.id, p.nombre]));
+  return rows.map((r) => ({
+    id: r.id,
+    doctorId: r.doctor_id,
+    productId: r.product_id,
+    productName: pm.get(r.product_id),
+    qty: Number(r.qty),
+    type: r.type,
+    reason: r.reason,
+    saleId: r.sale_id,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function createInventoryMovement(input: {
+  productId: string;
+  qty: number;
+  type: "entrada" | "salida" | "ajuste";
+  reason?: string;
+}): Promise<void> {
+  const doctorId = await getCurrentDoctorId();
+  if (!doctorId) throw new Error("No doctor");
+  const { data: user } = await supabase.auth.getUser();
+  const { data: prod } = await supabase
+    .from("products")
+    .select("stock")
+    .eq("id", input.productId)
+    .single();
+  let newStock = Number(prod?.stock ?? 0);
+  if (input.type === "entrada") newStock += input.qty;
+  else if (input.type === "salida") newStock -= input.qty;
+  else if (input.type === "ajuste") newStock = input.qty;
+
+  const { error: mErr } = await supabase.from("inventory_movements" as any).insert({
+    doctor_id: doctorId,
+    product_id: input.productId,
+    qty: input.qty,
+    type: input.type,
+    reason: input.reason ?? null,
+    created_by: user.user?.id ?? null,
+  } as any);
+  if (mErr) throw mErr;
+  const { error: uErr } = await supabase.from("products").update({ stock: newStock } as any).eq("id", input.productId);
+  if (uErr) throw uErr;
+}
+
 
 /* ---------- doctor modules ---------- */
 
