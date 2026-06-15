@@ -44,6 +44,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
     { title: "Dashboard", url: "/admin", icon: LayoutDashboard, show: true },
     { title: "Pacientes", url: "/admin/pacientes", icon: Users, show: true },
     { title: "Citas", url: "/admin/citas", icon: CalendarDays, show: mod("citas") },
+    { title: "Agenda", url: "/admin/agenda", icon: CalendarClock, show: mod("citas") },
     { title: "Productos", url: "/admin/productos", icon: Activity, show: true },
     { title: "Sucursales", url: "/admin/sucursales", icon: Building2, show: true },
     { title: "Estadísticas", url: "/admin/estadisticas", icon: BarChart3, show: mod("reportes") },
