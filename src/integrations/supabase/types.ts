@@ -527,6 +527,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          doctor_id: string
+          id: string
+          payload: Json
+          read_at: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          doctor_id: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birth_date: string | null
@@ -693,6 +734,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reminder_settings: {
+        Row: {
+          created_at: string
+          doctor_id: string
+          enabled: boolean
+          hours_before: number
+          send_day_before: boolean
+          send_hours_before: boolean
+          send_same_day: boolean
+          send_time: string
+          updated_at: string
+          whatsapp_template: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id: string
+          enabled?: boolean
+          hours_before?: number
+          send_day_before?: boolean
+          send_hours_before?: boolean
+          send_same_day?: boolean
+          send_time?: string
+          updated_at?: string
+          whatsapp_template?: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string
+          enabled?: boolean
+          hours_before?: number
+          send_day_before?: boolean
+          send_hours_before?: boolean
+          send_same_day?: boolean
+          send_time?: string
+          updated_at?: string
+          whatsapp_template?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_settings_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: true
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sale_items: {
         Row: {
