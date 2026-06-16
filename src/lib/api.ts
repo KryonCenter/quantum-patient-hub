@@ -1225,11 +1225,11 @@ export function renderWhatsappTemplate(
   vars: { paciente: string; fecha: string; hora: string; doctor: string; sucursal: string }
 ): string {
   return tpl
-    .replaceAll("{paciente}", vars.paciente)
-    .replaceAll("{fecha}", vars.fecha)
-    .replaceAll("{hora}", vars.hora)
-    .replaceAll("{doctor}", vars.doctor)
-    .replaceAll("{sucursal}", vars.sucursal);
+    .split("{paciente}", vars.paciente)
+    .split("{fecha}", vars.fecha)
+    .split("{hora}", vars.hora)
+    .split("{doctor}", vars.doctor)
+    .split("{sucursal}", vars.sucursal);
 }
 
 export function buildWhatsappLink(phone: string, message: string): string {
