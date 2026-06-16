@@ -49,14 +49,13 @@ Nuevos roles: `recepcion`, `asistente`, `monitor`, `super_admin` (además de `ad
 - Si el menor no existe: alta rápida y la cita queda `pending_validation` hasta que el doctor apruebe.
 - Selección de doctor primero (todos los doctores visibles), luego sucursal y productos/servicios filtrados a ese doctor.
 
-## Bloque 7 — Recordatorios y notificaciones
+## Bloque 7 — Recordatorios y notificaciones ⏳ (parcial)
 
-- Tabla `reminder_settings` por doctor: horas configurables (ej. 08:00) y días (1 día antes, mismo día, 2 horas antes/check-in).
-- Plantilla de WhatsApp configurable por doctor (`whatsapp_template`) con tokens: `{paciente}`, `{hora}`, `{doctor}`, `{sucursal}`.
-- Edge function `send-reminders` + cron (pg_cron, cada 15 min) que evalúa qué citas requieren recordatorio según settings.
-- Tabla `notifications` (doctor_id, type, payload, read_at). Botón de campana en el header del doctor con badge.
-- Al confirmar el paciente en la app → notificación al doctor.
-- Arreglar `send-appointment-email` (revisar dominio/sender) para que el correo llegue. Si no hay dominio verificado → guiar setup.
+- Tabla `reminder_settings` por doctor con toggles (día antes, mismo día, X horas antes), hora de envío y plantilla WhatsApp configurable (`{paciente}`, `{fecha}`, `{hora}`, `{doctor}`, `{sucursal}`). ✅
+- Página "Recordatorios" con vista previa y botón "Probar en WhatsApp" (wa.me). ✅
+- Tabla `notifications` + campana en el header con badge de no leídos. ✅
+- Pendiente: edge function `send-reminders` + cron pg_cron (requiere configurar dominio de correo / proveedor WhatsApp Business o automatizador).
+- Pendiente: arreglar `send-appointment-email` — necesita dominio de email verificado (esperando setup del usuario).
 
 ## Bloque 8 — Pantalla Monitor (Smart TV)
 
