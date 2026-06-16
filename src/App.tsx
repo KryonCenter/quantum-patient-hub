@@ -22,6 +22,7 @@ import PatientBooking from "./pages/PatientBooking";
 import DoctorPOS from "./pages/DoctorPOS";
 import DoctorInventario from "./pages/DoctorInventario";
 import DoctorReportes from "./pages/DoctorReportes";
+import DoctorRecordatorios from "./pages/DoctorRecordatorios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,8 @@ const App = () => (
             <Route path="/admin/inventario" element={<ProtectedRoute requireAdmin><DoctorInventario /></ProtectedRoute>} />
             <Route path="/admin/reportes" element={<ProtectedRoute requireAdmin><DoctorReportes /></ProtectedRoute>} />
             <Route path="/doctor/reportes" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorReportes /></ProtectedRoute>} />
+            <Route path="/doctor/recordatorios" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorRecordatorios /></ProtectedRoute>} />
+            <Route path="/admin/recordatorios" element={<ProtectedRoute requireAdmin><DoctorRecordatorios /></ProtectedRoute>} />
 
             {/* Patient */}
             <Route path="/mis-citas" element={<ProtectedRoute><UserCitas /></ProtectedRoute>} />
