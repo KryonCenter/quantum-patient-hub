@@ -1142,3 +1142,133 @@ export async function listAllDoctors(): Promise<{ id: string; displayName: strin
   return (data ?? []).map((d: any) => ({ id: d.id, displayName: d.display_name }));
 }
 
+
+/* ---------- Reminders & Notifications (Bloque 7) ---------- */
+
+export interface ReminderSettings {
+  doctorId: string;
+  enabled: boolean;
+  sendDayBefore: boolean;
+  sendSameDay: boolean;
+  sendHoursBefore: boolean;
+  hoursBefore: number;
+  sendTime: string;
+  whatsappTemplate: string;
+}
+
+export interface AppNotification {
+  id: string;
+  doctorId: string;
+  type: string;
+  title: string;
+  body: string | null;
+  payload: any;
+  readAt: string | null;
+  createdAt: string;
+}
+
+const DEFAULT_TEMPLATE = `Hola {paciente}, le escribo con el motivo para confirmar su cita programada para el {fecha} a las {hora} 🗓️
+
+Es importante No presentar tos, gripa y/o fiebre para su atención dental 🤧
+
+🙌 Quedo atenta a su respuesta ✅
+
+En caso de cancelación 🚫 favor de notificarnos 🙏 para reagendar su cita 👩‍💻
+
+{doctor} — {sucursal}`;
+
+export async function fetchReminderSettings(): Promise<ReminderSettings | null> {
+  const did = await getCurrentDoctorId();
+  if (!did) return null;
+  const { data, error } = await supabase
+    .from("reminder_settings" as any)
+    .select("*")
+    .eq("doctor_id", did)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    return {
+      doctorId: did, enabled: true, sendDayBefore: true, sendSameDay: true,
+      sendHoursBefore: true, hoursBefore: 2, sendTime: "08:00",
+      whatsappTemplate: DEFAULT_TEMPLATE,
+    };
+  }
+  const r: any = data;
+  return {
+    doctorId: r.doctor_id,
+    enabled: r.enabled,
+    sendDayBefore: r.send_day_before,
+    sendSameDay: r.send_same_day,
+    sendHoursBefore: r.send_hours_before,
+    hoursBefore: r.hours_before,
+    sendTime: String(r.send_time).slice(0, 5),
+    whatsappTemplate: r.whatsapp_template,
+  };
+}
+
+export async function saveReminderSettings(s: ReminderSettings): Promise<void> {
+  const { error } = await supabase.from("reminder_settings" as any).upsert({
+    doctor_id: s.doctorId,
+    enabled: s.enabled,
+    send_day_before: s.sendDayBefore,
+    send_same_day: s.sendSameDay,
+    send_hours_before: s.sendHoursBefore,
+    hours_before: s.hoursBefore,
+    send_time: s.sendTime,
+    whatsapp_template: s.whatsappTemplate,
+  } as any);
+  if (error) throw error;
+}
+
+export function renderWhatsappTemplate(
+  tpl: string,
+  vars: { paciente: string; fecha: string; hora: string; doctor: string; sucursal: string }
+): string {
+  return tpl
+    .replaceAll("{paciente}", vars.paciente)
+    .replaceAll("{fecha}", vars.fecha)
+    .replaceAll("{hora}", vars.hora)
+    .replaceAll("{doctor}", vars.doctor)
+    .replaceAll("{sucursal}", vars.sucursal);
+}
+
+export function buildWhatsappLink(phone: string, message: string): string {
+  const clean = phone.replace(/\D/g, "");
+  return `https://wa.me/${clean}?text=${encodeURIComponent(message)}`;
+}
+
+export async function fetchNotifications(limit = 30): Promise<AppNotification[]> {
+  const did = await getCurrentDoctorId();
+  if (!did) return [];
+  const { data, error } = await supabase
+    .from("notifications" as any)
+    .select("*")
+    .eq("doctor_id", did)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id, doctorId: r.doctor_id, type: r.type, title: r.title,
+    body: r.body, payload: r.payload, readAt: r.read_at, createdAt: r.created_at,
+  }));
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await supabase.from("notifications" as any).update({ read_at: new Date().toISOString() } as any).eq("id", id);
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const did = await getCurrentDoctorId();
+  if (!did) return;
+  await supabase.from("notifications" as any).update({ read_at: new Date().toISOString() } as any).eq("doctor_id", did).is("read_at", null);
+}
+
+export async function createNotification(input: { doctorId: string; type: string; title: string; body?: string; payload?: any }): Promise<void> {
+  await supabase.from("notifications" as any).insert({
+    doctor_id: input.doctorId,
+    type: input.type,
+    title: input.title,
+    body: input.body ?? null,
+    payload: input.payload ?? {},
+  } as any);
+}
