@@ -1,4 +1,4 @@
-import { Activity, LayoutDashboard, Users, BarChart3, UsersRound, Settings, Shield, LogOut, CalendarDays, Building2, Stethoscope, CalendarClock, DollarSign, Package } from "lucide-react";
+import { Activity, LayoutDashboard, Users, BarChart3, UsersRound, Settings, Shield, LogOut, CalendarDays, Building2, Stethoscope, CalendarClock, DollarSign, Package, FileBarChart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
@@ -50,6 +50,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
     { title: "Inventario", url: "/admin/inventario", icon: Package, show: mod("inventario") },
     { title: "Sucursales", url: "/admin/sucursales", icon: Building2, show: true },
     { title: "Estadísticas", url: "/admin/estadisticas", icon: BarChart3, show: mod("reportes") },
+    { title: "Reportes", url: "/admin/reportes", icon: FileBarChart, show: mod("reportes") },
     { title: "Usuarios", url: "/admin/usuarios", icon: UsersRound, show: true },
     { title: "Configuración", url: "/admin/configuracion", icon: Settings, show: true },
   ].filter((i) => i.show);
@@ -63,6 +64,7 @@ export function AppSidebar({ userRole, userName }: AppSidebarProps) {
     { title: "Punto de Venta", url: "/doctor/pos", icon: DollarSign, show: mod("pos") },
     { title: "Inventario", url: "/doctor/inventario", icon: Package, show: mod("inventario") },
     { title: "Sucursales", url: "/doctor/sucursales", icon: Building2, show: true },
+    { title: "Reportes", url: "/doctor/reportes", icon: FileBarChart, show: mod("reportes") },
     { title: "Configuración", url: "/doctor/configuracion", icon: Settings, show: true },
   ].filter((i) => i.show);
 

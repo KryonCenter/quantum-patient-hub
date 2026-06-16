@@ -29,10 +29,10 @@ Nuevos roles: `recepcion`, `asistente`, `monitor`, `super_admin` (además de `ad
 - Si el producto es `physical` y hay inventario → descuenta stock.
 - Cierre de cita marca la venta como `paid` y dispara evento al monitor.
 
-## Bloque 4 — Reportes
+## Bloque 4 — Reportes ✅ (entregado)
 
-- Página "Reportes" (admin de doctor, super admin): ventas por semana / quincena / mes / rango personalizado. Filtros por sucursal, método de pago, doctor (super admin).
-- Tarjetas: ingresos totales, número de ventas, ticket promedio, desglose por método.
+- Página "Reportes" con presets semana / quincena / mes / rango personalizado y filtros por sucursal y método.
+- Tarjetas: ingresos totales, número de ventas, ticket promedio, desglose por método; gráficas de ingresos por día y distribución por método.
 
 ## Bloque 5 — Agenda inteligente
 
